@@ -10,7 +10,7 @@
 import SwiftUI
 
 enum MarkupTool: String, CaseIterable, Identifiable {
-	case draw, arrow, box, text, blur
+	case draw, arrow, box, text, blur, crop
 	var id: String { rawValue }
 
 	var symbolName: String {
@@ -20,6 +20,7 @@ enum MarkupTool: String, CaseIterable, Identifiable {
 		case .box: "rectangle"
 		case .text: "textformat"
 		case .blur: "drop.halffull"
+		case .crop: "crop"
 		}
 	}
 
@@ -44,12 +45,29 @@ struct Annotation: Identifiable {
 }
 
 @MainActor @Observable final class MarkupStore {
-	var tool: MarkupTool = .draw
+	static let fullCrop = CGRect(x: 0, y: 0, width: 1, height: 1)
+
+	/// `nil` = no active tool (palette hidden, canvas inert). Tapping the selected
+	/// tool again deselects it.
+	var tool: MarkupTool? = .draw
 	var color: Color = .red
 	var annotations: [Annotation] = []
+	/// Crop rectangle in normalized [0,1] image coordinates; full image by default.
+	var cropRect = MarkupStore.fullCrop
+
+	var isFreehand: Bool { tool == .draw }
+	var placesAnnotations: Bool {
+		switch tool {
+		case .arrow, .box, .text, .blur: true
+		default: false
+		}
+	}
 
 	func add(_ annotation: Annotation) { annotations.append(annotation) }
 	func undoLastAnnotation() { if !annotations.isEmpty { annotations.removeLast() } }
 	var hasAnnotations: Bool { !annotations.isEmpty }
+
+	var isCropped: Bool { cropRect != MarkupStore.fullCrop }
+	func resetCrop() { cropRect = MarkupStore.fullCrop }
 }
 #endif

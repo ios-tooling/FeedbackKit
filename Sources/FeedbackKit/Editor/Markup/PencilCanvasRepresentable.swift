@@ -29,23 +29,34 @@ struct PencilCanvasRepresentable: UIViewRepresentable {
 
 	func updateUIView(_ canvas: PKCanvasView, context: Context) {
 		canvas.isUserInteractionEnabled = isActive
-		let picker = context.coordinator.toolPicker
-		Task { @MainActor in
-			guard canvas.window != nil else { return }
-			picker.setVisible(isActive, forFirstResponder: canvas)
-			if isActive {
-				picker.addObserver(canvas)
-				canvas.becomeFirstResponder()
-			} else {
-				canvas.resignFirstResponder()
-			}
-		}
+		context.coordinator.updatePicker(active: isActive, canvas: canvas)
 	}
 
 	func makeCoordinator() -> Coordinator { Coordinator() }
 
-	final class Coordinator {
+	@MainActor final class Coordinator {
 		let toolPicker = PKToolPicker()
+
+		// The editor is presented in its own window, so on the first layout pass the
+		// canvas may not be attached to a window yet. Retry briefly until it is, then
+		// show the tool picker — otherwise it never appears (and only the default pen works).
+		func updatePicker(active: Bool, canvas: PKCanvasView, attempt: Int = 0) {
+			Task { @MainActor in
+				guard canvas.window != nil else {
+					guard attempt < 12 else { return }
+					try? await Task.sleep(nanoseconds: 50_000_000)
+					updatePicker(active: active, canvas: canvas, attempt: attempt + 1)
+					return
+				}
+				toolPicker.setVisible(active, forFirstResponder: canvas)
+				if active {
+					toolPicker.addObserver(canvas)
+					canvas.becomeFirstResponder()
+				} else {
+					canvas.resignFirstResponder()
+				}
+			}
+		}
 	}
 }
 #endif

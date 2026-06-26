@@ -12,7 +12,7 @@ struct MarkupToolbar: View {
 	var body: some View {
 		HStack(spacing: 6) {
 			ForEach(MarkupTool.allCases) { tool in
-				Button { store.tool = tool } label: {
+				Button { store.tool = (store.tool == tool) ? nil : tool } label: {
 					Image(systemName: tool.symbolName)
 						.font(.body.weight(.medium))
 						.frame(width: 38, height: 38)

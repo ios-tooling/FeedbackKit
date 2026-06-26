@@ -12,13 +12,13 @@ import PencilKit
 import CrossPlatformKit
 
 enum MarkupFlattener {
-	@MainActor static func flatten(base: UXImage, drawing: PKDrawing, annotations: [Annotation], displaySize: CGSize) -> UXImage {
+	@MainActor static func flatten(base: UXImage, drawing: PKDrawing, annotations: [Annotation], displaySize: CGSize, cropRect: CGRect = CGRect(x: 0, y: 0, width: 1, height: 1)) -> UXImage {
 		let size = base.size
 		let format = UIGraphicsImageRendererFormat.default()
 		format.scale = base.scale
 		let renderer = UIGraphicsImageRenderer(size: size, format: format)
 
-		return renderer.image { context in
+		let full = renderer.image { context in
 			let cg = context.cgContext
 			base.draw(in: CGRect(origin: .zero, size: size))
 
@@ -30,6 +30,16 @@ enum MarkupFlattener {
 
 			for annotation in annotations { draw(annotation, base: base, imageSize: size, in: cg) }
 		}
+
+		return cropped(full, to: cropRect)
+	}
+
+	private static func cropped(_ image: UXImage, to cropRect: CGRect) -> UXImage {
+		guard cropRect != CGRect(x: 0, y: 0, width: 1, height: 1), let cg = image.cgImage else { return image }
+		let pixel = CGRect(x: cropRect.minX * CGFloat(cg.width), y: cropRect.minY * CGFloat(cg.height),
+						   width: cropRect.width * CGFloat(cg.width), height: cropRect.height * CGFloat(cg.height)).integral
+		guard let slice = cg.cropping(to: pixel) else { return image }
+		return UIImage(cgImage: slice, scale: image.scale, orientation: image.imageOrientation)
 	}
 
 	private static func draw(_ annotation: Annotation, base: UXImage, imageSize: CGSize, in cg: CGContext) {

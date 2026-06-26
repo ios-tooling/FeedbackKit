@@ -25,8 +25,8 @@ struct FeedbackEditorScreen: View {
 		NavigationStack {
 			VStack(spacing: 0) {
 				if includeScreenshot {
-					MarkupCanvasView(image: draft.originalImage, canvas: canvas, store: store, isCommenting: commentExpanded, displaySize: $displaySize)
 					MarkupToolbar(store: store)
+					MarkupCanvasView(image: draft.originalImage, canvas: canvas, store: store, isCommenting: commentExpanded, displaySize: $displaySize)
 					if commentExpanded { CommentField(text: $comment) }
 				} else {
 					CommentField(text: $comment)
@@ -64,7 +64,10 @@ struct FeedbackEditorScreen: View {
 					Button("Send", action: send).disabled(!canSend)
 				}
 			}
+			.toolbarBackground(.visible, for: .navigationBar)
+			.toolbarBackground(.black, for: .navigationBar)
 		}
+		.preferredColorScheme(.dark)
 	}
 
 	// A text-only report needs a comment; with a screenshot there is always content.
@@ -74,7 +77,7 @@ struct FeedbackEditorScreen: View {
 
 	private func send() {
 		let annotated = includeScreenshot
-			? MarkupFlattener.flatten(base: draft.originalImage, drawing: canvas.drawing, annotations: store.annotations, displaySize: displaySize)
+			? MarkupFlattener.flatten(base: draft.originalImage, drawing: canvas.drawing, annotations: store.annotations, displaySize: displaySize, cropRect: store.cropRect)
 			: nil
 		guard let report = ReportBuilder.makeReport(draft: draft, comment: comment, category: category, annotated: annotated) else {
 			controller.cancel()

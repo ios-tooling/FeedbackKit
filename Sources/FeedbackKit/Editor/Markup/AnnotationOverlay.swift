@@ -35,12 +35,12 @@ struct AnnotationOverlay: View {
 	private var placementGesture: some Gesture {
 		DragGesture(minimumDistance: 0)
 			.onChanged { value in
-				guard !store.tool.isFreehand, store.tool != .text else { return }
-				draft = Annotation(kind: kind(for: store.tool), start: normalize(value.startLocation), end: normalize(value.location), color: store.color)
+				guard let tool = store.tool, tool != .text, store.placesAnnotations else { return }
+				draft = Annotation(kind: kind(for: tool), start: normalize(value.startLocation), end: normalize(value.location), color: store.color)
 			}
 			.onEnded { value in
-				guard !store.tool.isFreehand else { return }
-				if store.tool == .text {
+				guard let tool = store.tool, store.placesAnnotations else { return }
+				if tool == .text {
 					pendingText = Annotation(kind: .text, start: normalize(value.location), end: normalize(value.location), color: store.color)
 					textInput = ""
 					return
