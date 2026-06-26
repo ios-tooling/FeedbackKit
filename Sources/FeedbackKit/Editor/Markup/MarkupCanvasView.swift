@@ -15,6 +15,7 @@ struct MarkupCanvasView: View {
 	let image: UXImage
 	let canvas: PKCanvasView
 	@Bindable var store: MarkupStore
+	let isCommenting: Bool
 	@Binding var displaySize: CGSize
 
 	var body: some View {
@@ -22,11 +23,11 @@ struct MarkupCanvasView: View {
 			let fit = Self.fittedSize(image.size, in: geo.size)
 			ZStack {
 				Image(uiImage: image).resizable().frame(width: fit.width, height: fit.height)
-				PencilCanvasRepresentable(canvas: canvas, isActive: store.tool.isFreehand)
+				PencilCanvasRepresentable(canvas: canvas, isActive: store.tool.isFreehand && !isCommenting)
 					.frame(width: fit.width, height: fit.height)
-					.allowsHitTesting(store.tool.isFreehand)
+					.allowsHitTesting(store.tool.isFreehand && !isCommenting)
 				AnnotationOverlay(store: store, displaySize: fit)
-					.allowsHitTesting(!store.tool.isFreehand)
+					.allowsHitTesting(!store.tool.isFreehand && !isCommenting)
 			}
 			.frame(width: fit.width, height: fit.height)
 			.frame(maxWidth: .infinity, maxHeight: .infinity)

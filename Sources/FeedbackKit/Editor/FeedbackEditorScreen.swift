@@ -18,15 +18,22 @@ struct FeedbackEditorScreen: View {
 	@State private var displaySize: CGSize = .zero
 	@State private var comment = ""
 	@State private var category: FeedbackCategory = .bug
-	@State private var commentExpanded = true
+	@State private var commentExpanded = false
+	@State private var includeScreenshot = true
 
 	var body: some View {
 		NavigationStack {
 			VStack(spacing: 0) {
-				MarkupCanvasView(image: draft.originalImage, canvas: canvas, store: store, displaySize: $displaySize)
-				MarkupToolbar(store: store)
-				if commentExpanded { CommentField(text: $comment) }
+				if includeScreenshot {
+					MarkupCanvasView(image: draft.originalImage, canvas: canvas, store: store, isCommenting: commentExpanded, displaySize: $displaySize)
+					MarkupToolbar(store: store)
+					if commentExpanded { CommentField(text: $comment) }
+				} else {
+					CommentField(text: $comment)
+					Spacer(minLength: 0)
+				}
 			}
+			.onChange(of: store.tool) { if commentExpanded { withAnimation { commentExpanded = false } } }
 			.navigationTitle("Feedback")
 			.navigationBarTitleDisplayMode(.inline)
 			.toolbar {
@@ -42,19 +49,33 @@ struct FeedbackEditorScreen: View {
 					.pickerStyle(.menu)
 				}
 				ToolbarItem(placement: .topBarTrailing) {
-					Button("Comment", systemImage: commentExpanded ? "text.bubble.fill" : "text.bubble") {
-						withAnimation { commentExpanded.toggle() }
+					Button(includeScreenshot ? "Hide screenshot" : "Add screenshot", systemImage: includeScreenshot ? "photo" : "photo.badge.plus") {
+						withAnimation { includeScreenshot.toggle() }
+					}
+				}
+				if includeScreenshot {
+					ToolbarItem(placement: .topBarTrailing) {
+						Button("Comment", systemImage: commentExpanded ? "text.bubble.fill" : "text.bubble") {
+							withAnimation { commentExpanded.toggle() }
+						}
 					}
 				}
 				ToolbarItem(placement: .confirmationAction) {
-					Button("Send", action: send)
+					Button("Send", action: send).disabled(!canSend)
 				}
 			}
 		}
 	}
 
+	// A text-only report needs a comment; with a screenshot there is always content.
+	private var canSend: Bool {
+		includeScreenshot || !comment.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+	}
+
 	private func send() {
-		let annotated = MarkupFlattener.flatten(base: draft.originalImage, drawing: canvas.drawing, annotations: store.annotations, displaySize: displaySize)
+		let annotated = includeScreenshot
+			? MarkupFlattener.flatten(base: draft.originalImage, drawing: canvas.drawing, annotations: store.annotations, displaySize: displaySize)
+			: nil
 		guard let report = ReportBuilder.makeReport(draft: draft, comment: comment, category: category, annotated: annotated) else {
 			controller.cancel()
 			return

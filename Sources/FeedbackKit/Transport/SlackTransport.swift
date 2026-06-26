@@ -20,12 +20,26 @@ public struct SlackTransport: FeedbackTransport {
 	}
 
 	public func send(_ report: FeedbackReport) async throws {
-		let image = report.annotatedImageData
-		let filename = "feedback-\(report.id.uuidString).jpg"
+		// Text-only report (no screenshot): post a plain message. Requires the
+		// `chat:write` scope in addition to `files:write`.
+		guard let image = report.annotatedImageData else {
+			try await postMessage(SlackMessage.text(for: report))
+			return
+		}
 
+		let filename = "feedback-\(report.id.uuidString).jpg"
 		let upload = try await requestUploadURL(filename: filename, length: image.count)
 		try await uploadBytes(image, to: upload.url)
 		try await completeUpload(fileID: upload.id, title: filename, comment: SlackMessage.text(for: report))
+	}
+
+	// MARK: Text-only
+
+	private func postMessage(_ text: String) async throws {
+		var request = slackRequest("https://slack.com/api/chat.postMessage")
+		request.setValue("application/json; charset=utf-8", forHTTPHeaderField: "Content-Type")
+		request.httpBody = try JSONSerialization.data(withJSONObject: ["channel": channelID, "text": text])
+		_ = try await run(request, as: SlackOK.self)
 	}
 
 	// MARK: Step 1

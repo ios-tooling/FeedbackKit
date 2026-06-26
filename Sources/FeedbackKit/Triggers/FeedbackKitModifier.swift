@@ -18,15 +18,20 @@ public extension View {
 struct FeedbackKitModifier: ViewModifier {
 	let triggers: FeedbackTriggers
 	@State private var controller = FeedbackController.shared
+	@State private var presenter = FeedbackWindowPresenter()
 
 	func body(content: Content) -> some View {
 		content
 			.overlay { gestureOverlay }
 			.overlay { if triggers.contains(.floatingButton) { FloatingTriggerButton() } }
-			.overlay { CaptureFlashView(state: controller.flash) }
 			.task { await observeShakes() }
-			.fullScreenCover(item: draftBinding) { draft in
-				FeedbackEditorScreen(draft: draft)
+			// Both the flash and the editor live in their own windows so they show over
+			// any sheet the app already has up (a root overlay/.fullScreenCover would be
+			// blocked by it).
+			.onAppear { presenter.installFlash(state: controller.flash) }
+			.onChange(of: controller.isPresenting) { _, presenting in
+				if presenting, let draft = controller.activeDraft { presenter.present(draft) }
+				else { presenter.dismiss() }
 			}
 	}
 
@@ -34,10 +39,6 @@ struct FeedbackKitModifier: ViewModifier {
 		if triggers.contains(.multiFingerGesture) {
 			MultiFingerLongPress(action: controller.trigger).allowsHitTesting(false)
 		}
-	}
-
-	private var draftBinding: Binding<FeedbackDraft?> {
-		Binding(get: { controller.activeDraft }, set: { if $0 == nil { controller.cancel() } })
 	}
 
 	private func observeShakes() async {

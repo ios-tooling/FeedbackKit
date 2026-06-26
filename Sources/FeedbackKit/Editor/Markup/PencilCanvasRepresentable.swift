@@ -18,6 +18,12 @@ struct PencilCanvasRepresentable: UIViewRepresentable {
 		canvas.drawingPolicy = .anyInput
 		canvas.backgroundColor = .clear
 		canvas.isOpaque = false
+		// PKCanvasView is a scroll view; the tool picker would otherwise adjust its
+		// contentInset/offset and shift strokes away from where they were drawn when
+		// flattened. Pin the drawing coordinate space to the view's frame.
+		canvas.isScrollEnabled = false
+		canvas.contentInsetAdjustmentBehavior = .never
+		canvas.contentInset = .zero
 		return canvas
 	}
 

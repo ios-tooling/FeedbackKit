@@ -12,8 +12,10 @@ import CrossPlatformKit
 enum ReportBuilder {
 	static let jpegQuality: CGFloat = 0.85
 
-	@MainActor static func makeReport(draft: FeedbackDraft, comment: String, category: FeedbackCategory, annotated: UXImage) -> FeedbackReport? {
-		guard let annotatedData = annotated.jpegData(compressionQuality: jpegQuality) else { return nil }
+	/// Pass `annotated: nil` for a text-only report (the tester hid the screenshot).
+	@MainActor static func makeReport(draft: FeedbackDraft, comment: String, category: FeedbackCategory, annotated: UXImage?) -> FeedbackReport? {
+		let annotatedData = annotated?.jpegData(compressionQuality: jpegQuality)
+		if annotated != nil, annotatedData == nil { return nil }
 		return FeedbackReport(
 			id: UUID(),
 			createdAt: Date(),
@@ -24,7 +26,7 @@ enum ReportBuilder {
 			userID: draft.userID,
 			breadcrumbs: draft.breadcrumbs,
 			annotatedImageData: annotatedData,
-			originalImageData: draft.originalImage.jpegData(compressionQuality: jpegQuality)
+			originalImageData: annotated == nil ? nil : draft.originalImage.jpegData(compressionQuality: jpegQuality)
 		)
 	}
 }

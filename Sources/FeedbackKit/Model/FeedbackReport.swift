@@ -18,8 +18,9 @@ public struct FeedbackReport: Codable, Sendable, Identifiable, Equatable {
 	public var userID: String?
 	public var breadcrumbs: [BreadcrumbSummary]?
 
-	/// Flattened capture (base screenshot + annotations), JPEG-encoded.
-	public var annotatedImageData: Data
+	/// Flattened capture (base screenshot + annotations), JPEG-encoded. `nil` for a
+	/// text-only report where the tester chose to omit the screenshot.
+	public var annotatedImageData: Data?
 	/// The clean, unannotated capture, JPEG-encoded. Occasionally useful for review.
 	public var originalImageData: Data?
 
@@ -32,7 +33,7 @@ public struct FeedbackReport: Codable, Sendable, Identifiable, Equatable {
 		context: FeedbackContext = .empty,
 		userID: String? = nil,
 		breadcrumbs: [BreadcrumbSummary]? = nil,
-		annotatedImageData: Data,
+		annotatedImageData: Data? = nil,
 		originalImageData: Data? = nil
 	) {
 		self.id = id

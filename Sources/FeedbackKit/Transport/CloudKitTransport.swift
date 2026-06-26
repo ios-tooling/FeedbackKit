@@ -36,7 +36,7 @@ public struct CloudKitTransport: FeedbackTransport {
 		record["metadataJSON"] = jsonString(report.metadata) as CKRecordValue
 		record["contextJSON"] = jsonString(report.context) as CKRecordValue
 		if let breadcrumbs = report.breadcrumbs { record["breadcrumbsJSON"] = jsonString(breadcrumbs) as CKRecordValue }
-		record["annotatedImage"] = CKAsset(fileURL: assets.annotated)
+		if let annotated = assets.annotated { record["annotatedImage"] = CKAsset(fileURL: annotated) }
 		if let original = assets.original { record["originalImage"] = CKAsset(fileURL: original) }
 
 		let database = CKContainer(identifier: containerID).database(with: scope.ckScope)
@@ -59,14 +59,20 @@ private extension CloudKitTransport.Scope {
 
 /// Writes the report's JPEGs to temporary files so they can become CKAssets.
 private struct TempAssets {
-	let annotated: URL
+	let annotated: URL?
 	let original: URL?
+	private let directory: URL
 
 	init(report: FeedbackReport) throws {
-		let directory = FileManager.default.temporaryDirectory.appendingPathComponent(report.id.uuidString, isDirectory: true)
+		directory = FileManager.default.temporaryDirectory.appendingPathComponent(report.id.uuidString, isDirectory: true)
 		try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-		annotated = directory.appendingPathComponent("annotated.jpg")
-		try report.annotatedImageData.write(to: annotated)
+		if let annotatedData = report.annotatedImageData {
+			let url = directory.appendingPathComponent("annotated.jpg")
+			try annotatedData.write(to: url)
+			annotated = url
+		} else {
+			annotated = nil
+		}
 		if let originalData = report.originalImageData {
 			let url = directory.appendingPathComponent("original.jpg")
 			try originalData.write(to: url)
@@ -77,6 +83,6 @@ private struct TempAssets {
 	}
 
 	func cleanUp() {
-		try? FileManager.default.removeItem(at: annotated.deletingLastPathComponent())
+		try? FileManager.default.removeItem(at: directory)
 	}
 }
