@@ -48,6 +48,31 @@ struct FeedbackKitModifier: ViewModifier {
 		}
 	}
 }
+#elseif canImport(AppKit)
+struct FeedbackKitModifier: ViewModifier {
+	let triggers: FeedbackTriggers
+	@State private var controller = FeedbackController.shared
+	@State private var presenter = FeedbackWindowPresenter()
+
+	func body(content: Content) -> some View {
+		content
+			.overlay { if triggers.contains(.floatingButton) { FloatingTriggerButton() } }
+			.background { shortcutButton }
+			// The editor lives in its own NSWindow, shown/hidden by the controller's state.
+			.onChange(of: controller.isPresenting) { _, presenting in
+				if presenting, let draft = controller.activeDraft { presenter.present(draft) }
+				else { presenter.dismiss() }
+			}
+	}
+
+	@ViewBuilder private var shortcutButton: some View {
+		if triggers.contains(.keyboardShortcut) {
+			Button("", action: controller.trigger)
+				.keyboardShortcut("f", modifiers: [.command, .shift])
+				.hidden()
+		}
+	}
+}
 #else
 struct FeedbackKitModifier: ViewModifier {
 	let triggers: FeedbackTriggers

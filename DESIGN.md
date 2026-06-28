@@ -7,16 +7,16 @@ Trigger → capture screen → annotate → send to pluggable destinations for l
 
 - **Audience:** internal testers / dogfooding. Not shipped to production end users — no
   consent dialogs or PII-compliance burden (an opt-in blur tool still exists for convenience).
-- **Platforms:** iOS-first (iPhone + iPad). macOS **deferred** — `trigger()` is a no-op that
-  logs via Chronicle; package still compiles. **watchOS dropped** from the manifest.
+- **Platforms:** iOS (iPhone + iPad) **and macOS**. **watchOS dropped** from the manifest.
 - **Deployment targets:** iOS 17, macOS 14 — forced upward from the original iOS 16 by the
   Chronicle (iOS 17) and Convey/Chronicle (macOS 14) dependencies.
 
 ## Triggers
 
-`FeedbackTriggers` OptionSet — `.shake`, `.floatingButton`, `.multiFingerGesture`
-(2/3-finger long-press), `.programmatic`. Host selects any combination via the root modifier.
-Default: `[.shake, .programmatic]`.
+`FeedbackTriggers` OptionSet — `.shake` (iOS), `.floatingButton`, `.multiFingerGesture`
+(2/3-finger long-press, iOS), `.keyboardShortcut` (⌘⇧F, macOS), `.programmatic`. Host selects
+any combination via the root modifier; triggers unavailable on a platform are ignored.
+Default: `[.shake, .keyboardShortcut, .programmatic]`.
 
 - Triggers are **suppressed while the editor is open** (no recursive capture).
 - FeedbackKit's own chrome (e.g. floating button) is hidden before capture.
@@ -25,20 +25,27 @@ Default: `[.shake, .programmatic]`.
 
 - **Capture-before-present:** grab pixels synchronously at trigger, *then* present the editor
   over the frozen image.
-- **Method:** `UIView.drawHierarchy(in:afterScreenUpdates:)` over the active `UIWindowScene`'s
-  windows, composited (catches sheets, alerts, keyboard). Fidelity prioritized over theatrics.
-  UIKit is acceptable here — the "SwiftUI-only" rule is a *layout* guideline.
-- **Theatrics:** white flash, **no** shutter sound, **no** corner-thumbnail animation.
+- **Method (iOS):** `UIView.drawHierarchy(in:afterScreenUpdates:)` over the active
+  `UIWindowScene`'s windows, composited (catches sheets, alerts, keyboard). Fidelity prioritized
+  over theatrics. UIKit is acceptable here — the "SwiftUI-only" rule is a *layout* guideline.
+- **Method (macOS):** snapshot the app's key window content view via
+  `NSView.cacheDisplay` (CrossPlatformKit's `extractImage`). App-scoped, so **no Screen
+  Recording (TCC) permission** — mirrors the iOS scope of "just this app".
+- **Theatrics:** white flash on iOS, **no** shutter sound, **no** corner-thumbnail animation.
+  macOS skips the flash.
 
 ## Editor
 
 - Layout: annotated image + **collapsible** comment field + **category picker**
   (Bug / Idea / Other). No severity in v1.
-- Markup: **hybrid** — PencilKit (`PKCanvasView`) for freehand / highlighter / eraser + native
-  feel + undo/redo; custom overlay for structured tools: **arrow, box/rectangle, text label,
-  blur-redact region** (real pixelation on flatten). Color picker + overlay-undo.
-  **Deferred (not yet built):** magnifier loupe, crop, emoji stamps.
-- Presented as a `fullScreenCover` from the root modifier.
+- Markup: **hybrid** — freehand drawing (PencilKit `PKCanvasView` on iOS; a SwiftUI
+  `Canvas` + drag drawer on macOS, since PencilKit is iOS-only) + a custom overlay for
+  structured tools: **arrow, box/rectangle, text label, blur-redact region** (real pixelation
+  on flatten) + **crop**. Color picker + overlay-undo. The flattener is platform-agnostic: it
+  composites an explicit `CGContext` bitmap and takes the freehand layer pre-rendered, so it
+  never imports PencilKit. **Deferred:** magnifier loupe, emoji stamps.
+- Presented as a `fullScreenCover`-style window: a dedicated `UIWindow` (iOS) / `NSWindow`
+  (macOS) at the top of the stack, owned by the root modifier.
 - **Immutable after send** — no edit-after-send; the outbox only retries delivery.
 
 ## Data model

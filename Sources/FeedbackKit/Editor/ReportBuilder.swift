@@ -5,9 +5,13 @@
 //  Turns an annotated draft into a sendable FeedbackReport (JPEG-encoding both images).
 //
 
-#if canImport(UIKit) && !os(watchOS)
-import UIKit
+import Foundation
 import CrossPlatformKit
+#if canImport(UIKit)
+import UIKit
+#elseif canImport(AppKit)
+import AppKit
+#endif
 
 enum ReportBuilder {
 	static let jpegQuality: CGFloat = 0.85
@@ -30,4 +34,3 @@ enum ReportBuilder {
 		)
 	}
 }
-#endif

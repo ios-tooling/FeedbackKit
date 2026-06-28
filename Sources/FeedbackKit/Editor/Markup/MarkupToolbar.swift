@@ -3,7 +3,6 @@
 //  FeedbackKit
 //
 
-#if canImport(UIKit) && !os(watchOS)
 import SwiftUI
 
 struct MarkupToolbar: View {
@@ -32,4 +31,3 @@ struct MarkupToolbar: View {
 		.background(.bar)
 	}
 }
-#endif

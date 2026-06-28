@@ -4,9 +4,9 @@ Guidance for AI agents working in the FeedbackKit repo. Read this before making 
 
 ## What this is
 
-A SwiftUI Swift Package providing in-app feedback for **internal iOS beta/dogfooding**: trigger
-→ capture screen → annotate → deliver to pluggable transports. iOS-first; macOS compiles but is
-deferred (capture/editor are no-ops). See `DESIGN.md` for full rationale.
+A SwiftUI Swift Package providing in-app feedback for **internal beta/dogfooding**: trigger
+→ capture screen → annotate → deliver to pluggable transports. Runs on **iOS and macOS**
+(watchOS dropped). See `DESIGN.md` for full rationale.
 
 ## Build & test
 
@@ -16,9 +16,11 @@ swift test                                                           # unit test
 xcodebuild build -scheme FeedbackKit -destination 'generic/platform=iOS'   # compile the iOS branch
 ```
 
-**Always run the iOS build before declaring done.** Most of the code is inside
-`#if canImport(UIKit) && !os(watchOS)`; the macOS `swift build`/`swift test` does *not* compile
-it, so iOS-only mistakes hide until the `xcodebuild` step.
+**Run the iOS build before declaring done.** `swift build`/`swift test` exercise the macOS
+branch (and the shared, now-cross-platform editor/flattener); the iOS-only freehand path
+(PencilKit) and toolbar placements only compile under the `xcodebuild` step, so iOS-only
+mistakes hide until then. Platform-specific code is fenced with `#if canImport(UIKit)` /
+`#elseif canImport(AppKit)`.
 
 ## Architecture (by directory, under `Sources/FeedbackKit/`)
 
@@ -29,13 +31,17 @@ it, so iOS-only mistakes hide until the `xcodebuild` step.
   `CloudKitTransport`, `SlackTransport`. `HTTPSupport` holds shared URLSession helpers.
 - `Outbox/` — `OutboxStore` (one JSON file per report on disk), `OutboxSender` (headless drain),
   `FeedbackOutbox` (`@MainActor @Observable` manager: retry/backoff + Achtung toasts).
-- `Capture/` — `ScreenCapturer` (composites all scene windows) + `CaptureFlashState`.
+- `Capture/` — `ScreenCapturer` (iOS: composites all scene windows; macOS: key-window
+  `extractImage`) + `CaptureFlashState`.
 - `Triggers/` — `FeedbackKitModifier` (`.feedbackKit`), `FeedbackContextModifier`
-  (`.feedbackContext`), shake/gesture/floating-button triggers.
+  (`.feedbackContext`), `FeedbackWindowPresenter` (UIWindow / NSWindow), and the trigger
+  affordances: shake/multi-finger gesture (iOS), keyboard shortcut (macOS), floating button.
 - `Configuration/` — `FeedbackKit` (public facade), `FeedbackController`
   (`@MainActor @Observable` brain), configuration, `FeedbackDraft`, `FeedbackTriggers`.
-- `Editor/` + `Editor/Markup/` — `FeedbackEditorScreen`, PencilKit canvas, structured-annotation
-  overlay/model/flattener, toolbar.
+- `Editor/` + `Editor/Markup/` — `FeedbackEditorScreen` + `FeedbackEditorToolbar`, the freehand
+  canvas (PencilKit on iOS, `FreehandCanvasView`/`FreehandRenderer` on macOS), structured-
+  annotation overlay/model, and the cross-platform `MarkupFlattener` (CGContext bitmap; takes the
+  freehand layer pre-rendered as a `UXImage`, so it stays PencilKit-free).
 - `Integrations/` — `ChronicleBreadcrumbs`.
 
 Data flow: `FeedbackController.trigger()` → capture → `FeedbackDraft` → `FeedbackEditorScreen`
@@ -70,12 +76,16 @@ Data flow: `FeedbackController.trigger()` → capture → `FeedbackDraft` → `F
   size; `MarkupFlattener` re-scales to native resolution and pixelates blur regions via CoreImage.
 - **Outbox is at-least-once.** Retry can re-deliver to transports that already succeeded; this is
   accepted for internal use.
-- **Shake** is detected by overriding `UIWindow.motionEnded` (posts a notification). It won't fire
-  while a text field is first responder.
-- **Tests are backend-only.** The capture/markup/trigger UI needs a real iOS host app to verify;
-  there are no headless UI tests. Don't claim UI works from `swift test` alone.
+- **Shake** (iOS) is detected by overriding `UIWindow.motionEnded` (posts a notification). It
+  won't fire while a text field is first responder. macOS has no shake; use `.keyboardShortcut`
+  (⌘⇧F), `.floatingButton`, or `.programmatic`.
+- **Editor window.** The editor lives in its own top-level window (UIWindow at `.alert` level on
+  iOS, a centered NSWindow on macOS) so it covers sheets the app already has up. On macOS, closing
+  the window via its close button is treated as Cancel.
+- **Tests are backend + flattener.** Capture/trigger/window UI still needs a real host app to
+  verify; there are no headless UI tests. Don't claim UI works from `swift test` alone.
 
 ## Not yet implemented
 
-- Markup extras: magnifier loupe, crop, emoji stamps.
+- Markup extras: magnifier loupe, emoji stamps.
 - CloudKit/Slack require live credentials (container ID / bot token) to verify end-to-end.

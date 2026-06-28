@@ -5,7 +5,6 @@
 //  SwiftUI rendering of a single structured annotation during editing.
 //
 
-#if canImport(UIKit) && !os(watchOS)
 import SwiftUI
 
 struct ArrowShape: Shape {
@@ -59,4 +58,3 @@ struct AnnotationShape: View {
 		}
 	}
 }
-#endif

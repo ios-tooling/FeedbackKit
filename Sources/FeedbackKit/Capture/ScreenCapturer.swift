@@ -38,10 +38,23 @@ import Suite
 	}
 }
 
+#elseif canImport(AppKit)
+
+import AppKit
+
+@MainActor public enum ScreenCapturer {
+	/// Snapshot the app's key window content (no Screen Recording permission needed). Scopes
+	/// the grab to our own app, matching the iOS behaviour. Call before presenting the editor.
+	public static func captureActiveScene() -> UXImage? {
+		let window = NSApp.keyWindow ?? NSApp.windows.first { $0.isVisible && $0.contentView != nil }
+		return window?.contentView?.extractImage()
+	}
+}
+
 #else
 
 @MainActor public enum ScreenCapturer {
-	/// Screen capture is iOS-only; deferred platforms return nil.
+	/// Screen capture is unavailable on this platform; returns nil.
 	public static func captureActiveScene() -> UXImage? { nil }
 }
 

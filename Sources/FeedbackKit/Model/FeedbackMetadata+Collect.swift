@@ -8,6 +8,8 @@ import Suite
 
 #if canImport(UIKit)
 import UIKit
+#elseif canImport(AppKit)
+import AppKit
 #endif
 
 public extension FeedbackMetadata {
@@ -51,6 +53,8 @@ public extension FeedbackMetadata {
 	@MainActor private static var screenSize: CGSize? {
 		#if canImport(UIKit)
 		UIScreen.main.bounds.size
+		#elseif canImport(AppKit)
+		NSScreen.main?.frame.size
 		#else
 		nil
 		#endif

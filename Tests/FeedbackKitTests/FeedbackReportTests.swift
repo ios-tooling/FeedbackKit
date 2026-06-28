@@ -50,8 +50,9 @@ struct FeedbackReportTests {
 		#expect(FeedbackContext.empty.metadata.isEmpty)
 	}
 
-	@Test func defaultTriggersAreShakeAndProgrammatic() {
+	@Test func defaultTriggersCoverShakeKeyboardAndProgrammatic() {
 		#expect(FeedbackTriggers.default.contains(.shake))
+		#expect(FeedbackTriggers.default.contains(.keyboardShortcut))
 		#expect(FeedbackTriggers.default.contains(.programmatic))
 		#expect(!FeedbackTriggers.default.contains(.floatingButton))
 	}

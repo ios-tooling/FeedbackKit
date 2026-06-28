@@ -2,18 +2,21 @@
 //  MarkupCanvasView.swift
 //  FeedbackKit
 //
-//  Composites the base capture, the PencilKit freehand layer, and the structured
-//  annotation overlay, sized to the image's aspect-fit rect.
+//  Composites the base capture, the freehand layer (PencilKit on iOS, SwiftUI Canvas on
+//  macOS), and the structured annotation overlay, sized to the image's aspect-fit rect.
 //
 
-#if canImport(UIKit) && !os(watchOS)
 import SwiftUI
-import PencilKit
 import CrossPlatformKit
+#if canImport(UIKit)
+import PencilKit
+#endif
 
 struct MarkupCanvasView: View {
 	let image: UXImage
+	#if canImport(UIKit)
 	let canvas: PKCanvasView
+	#endif
 	@Bindable var store: MarkupStore
 	let isCommenting: Bool
 	@Binding var displaySize: CGSize
@@ -27,10 +30,8 @@ struct MarkupCanvasView: View {
 			let fit = Self.fittedSize(image.size, in: geo.size)
 			ZStack {
 				ZStack {
-					Image(uiImage: image).resizable().frame(width: fit.width, height: fit.height)
-					PencilCanvasRepresentable(canvas: canvas, isActive: store.isFreehand && !isCommenting)
-						.frame(width: fit.width, height: fit.height)
-						.allowsHitTesting(store.isFreehand && !isCommenting)
+					Image(uxImage: image).resizable().frame(width: fit.width, height: fit.height)
+					freehandLayer(fit: fit)
 					AnnotationOverlay(store: store, displaySize: fit)
 						.allowsHitTesting(store.placesAnnotations && !isCommenting)
 				}
@@ -50,6 +51,19 @@ struct MarkupCanvasView: View {
 		.background(Color.black)
 	}
 
+	@ViewBuilder private func freehandLayer(fit: CGSize) -> some View {
+		let active = store.isFreehand && !isCommenting
+		#if canImport(UIKit)
+		PencilCanvasRepresentable(canvas: canvas, isActive: active)
+			.frame(width: fit.width, height: fit.height)
+			.allowsHitTesting(active)
+		#else
+		FreehandCanvasView(store: store, isActive: active, size: fit)
+			.frame(width: fit.width, height: fit.height)
+			.allowsHitTesting(active)
+		#endif
+	}
+
 	static func fittedSize(_ imageSize: CGSize, in available: CGSize) -> CGSize {
 		let available = CGSize(width: available.width - inset * 2, height: available.height - inset * 2)
 		guard imageSize.width > 0, imageSize.height > 0, available.width > 0, available.height > 0 else { return available }
@@ -57,4 +71,3 @@ struct MarkupCanvasView: View {
 		return CGSize(width: imageSize.width * scale, height: imageSize.height * scale)
 	}
 }
-#endif

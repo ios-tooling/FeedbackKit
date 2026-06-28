@@ -6,7 +6,6 @@
 //  tool is selected; drag to draw arrows/boxes/blur regions, tap to drop text.
 //
 
-#if canImport(UIKit) && !os(watchOS)
 import SwiftUI
 
 struct AnnotationOverlay: View {
@@ -74,4 +73,3 @@ struct AnnotationOverlay: View {
 		CGPoint(x: min(max(point.x / displaySize.width, 0), 1), y: min(max(point.y / displaySize.height, 0), 1))
 	}
 }
-#endif

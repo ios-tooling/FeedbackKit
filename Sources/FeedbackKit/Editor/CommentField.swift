@@ -3,7 +3,6 @@
 //  FeedbackKit
 //
 
-#if canImport(UIKit) && !os(watchOS)
 import SwiftUI
 
 struct CommentField: View {
@@ -17,4 +16,3 @@ struct CommentField: View {
 			.background(.bar)
 	}
 }
-#endif

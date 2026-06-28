@@ -6,7 +6,6 @@
 //  normalized [0,1] image coordinates so it survives any display size.
 //
 
-#if canImport(UIKit) && !os(watchOS)
 import SwiftUI
 
 enum MarkupTool: String, CaseIterable, Identifiable {
@@ -44,14 +43,25 @@ struct Annotation: Identifiable {
 	}
 }
 
+/// A freehand stroke in normalized [0,1] image coordinates. Used by the macOS canvas
+/// (iOS freehand lives in PencilKit's `PKDrawing` instead).
+struct Stroke: Identifiable {
+	let id = UUID()
+	var points: [CGPoint]       // normalized 0...1
+	var color: Color
+	var width: CGFloat = 4      // line width in display points (rasterized, then scaled on flatten)
+}
+
 @MainActor @Observable final class MarkupStore {
-	static let fullCrop = CGRect(x: 0, y: 0, width: 1, height: 1)
+	nonisolated static let fullCrop = CGRect(x: 0, y: 0, width: 1, height: 1)
 
 	/// `nil` = no active tool (palette hidden, canvas inert). Tapping the selected
 	/// tool again deselects it.
 	var tool: MarkupTool? = .draw
 	var color: Color = .red
 	var annotations: [Annotation] = []
+	/// Freehand strokes (macOS). Empty/unused on iOS, where PencilKit owns freehand.
+	var strokes: [Stroke] = []
 	/// Crop rectangle in normalized [0,1] image coordinates; full image by default.
 	var cropRect = MarkupStore.fullCrop
 
@@ -64,10 +74,14 @@ struct Annotation: Identifiable {
 	}
 
 	func add(_ annotation: Annotation) { annotations.append(annotation) }
-	func undoLastAnnotation() { if !annotations.isEmpty { annotations.removeLast() } }
-	var hasAnnotations: Bool { !annotations.isEmpty }
+	func add(_ stroke: Stroke) { strokes.append(stroke) }
+	/// Undo the most recent markup (freehand stroke or structured annotation, newest first).
+	func undoLastAnnotation() {
+		if !strokes.isEmpty { strokes.removeLast() }
+		else if !annotations.isEmpty { annotations.removeLast() }
+	}
+	var hasAnnotations: Bool { !annotations.isEmpty || !strokes.isEmpty }
 
 	var isCropped: Bool { cropRect != MarkupStore.fullCrop }
 	func resetCrop() { cropRect = MarkupStore.fullCrop }
 }
-#endif

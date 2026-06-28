@@ -53,4 +53,60 @@ import SwiftUI
 		return scenes.first { $0.activationState == .foregroundActive } ?? scenes.first
 	}
 }
+
+#elseif canImport(AppKit)
+import AppKit
+import SwiftUI
+
+@MainActor final class FeedbackWindowPresenter {
+	private var window: NSWindow?
+	private var closeDelegate: EditorWindowDelegate?
+
+	/// No-op on macOS — the white capture flash is iOS theatrics.
+	func installFlash(state: CaptureFlashState) {}
+
+	func present(_ draft: FeedbackDraft) {
+		guard window == nil else { return }
+		let host = NSHostingController(rootView: FeedbackEditorScreen(draft: draft))
+		let window = NSWindow(contentViewController: host)
+		window.title = "Feedback"
+		window.styleMask = [.titled, .closable, .fullSizeContentView]
+		window.isReleasedWhenClosed = false
+		window.setContentSize(defaultSize)
+		window.center()
+
+		let delegate = EditorWindowDelegate { [weak self] in self?.handleUserClose() }
+		window.delegate = delegate
+		closeDelegate = delegate
+
+		window.makeKeyAndOrderFront(nil)
+		NSApp.activate(ignoringOtherApps: true)
+		self.window = window
+	}
+
+	func dismiss() {
+		window?.delegate = nil      // suppress the delegate so close isn't read as a cancel
+		window?.close()
+		window = nil
+		closeDelegate = nil
+	}
+
+	/// The user clicked the window's close button — treat it as Cancel.
+	private func handleUserClose() {
+		window = nil
+		closeDelegate = nil
+		FeedbackController.shared.cancel()
+	}
+
+	private var defaultSize: CGSize {
+		guard let visible = NSScreen.main?.visibleFrame.size else { return CGSize(width: 1024, height: 720) }
+		return CGSize(width: visible.width * 0.6, height: visible.height * 0.7)
+	}
+}
+
+private final class EditorWindowDelegate: NSObject, NSWindowDelegate {
+	let onClose: () -> Void
+	init(onClose: @escaping () -> Void) { self.onClose = onClose }
+	func windowWillClose(_ notification: Notification) { onClose() }
+}
 #endif

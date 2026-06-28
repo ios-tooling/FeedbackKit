@@ -7,7 +7,6 @@
 //  on the store and applied by the flattener at send time.
 //
 
-#if canImport(UIKit) && !os(watchOS)
 import SwiftUI
 
 struct CropOverlay: View {
@@ -88,4 +87,3 @@ struct CropOverlay: View {
 		return CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
 	}
 }
-#endif

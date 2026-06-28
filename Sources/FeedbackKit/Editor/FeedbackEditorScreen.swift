@@ -6,14 +6,18 @@
 //  and send.
 //
 
-#if canImport(UIKit) && !os(watchOS)
 import SwiftUI
+import CrossPlatformKit
+#if canImport(UIKit)
 import PencilKit
+#endif
 
 struct FeedbackEditorScreen: View {
 	let draft: FeedbackDraft
 	@State private var controller = FeedbackController.shared
+	#if canImport(UIKit)
 	@State private var canvas = PKCanvasView()
+	#endif
 	@State private var store = MarkupStore()
 	@State private var displaySize: CGSize = .zero
 	@State private var comment = ""
@@ -26,7 +30,7 @@ struct FeedbackEditorScreen: View {
 			VStack(spacing: 0) {
 				if includeScreenshot {
 					MarkupToolbar(store: store)
-					MarkupCanvasView(image: draft.originalImage, canvas: canvas, store: store, isCommenting: commentExpanded, displaySize: $displaySize)
+					canvasView
 					if commentExpanded { CommentField(text: $comment) }
 				} else {
 					CommentField(text: $comment)
@@ -35,39 +39,26 @@ struct FeedbackEditorScreen: View {
 			}
 			.onChange(of: store.tool) { if commentExpanded { withAnimation { commentExpanded = false } } }
 			.navigationTitle("Feedback")
-			.navigationBarTitleDisplayMode(.inline)
 			.toolbar {
-				ToolbarItem(placement: .cancellationAction) {
-					Button("Cancel", role: .cancel) { controller.cancel() }
-				}
-				ToolbarItem(placement: .principal) {
-					Picker("Category", selection: $category) {
-						ForEach(FeedbackCategory.allCases, id: \.self) { category in
-							Label(category.displayName, systemImage: category.symbolName).tag(category)
-						}
-					}
-					.pickerStyle(.menu)
-				}
-				ToolbarItem(placement: .topBarTrailing) {
-					Button(includeScreenshot ? "Hide screenshot" : "Add screenshot", systemImage: includeScreenshot ? "photo" : "photo.badge.plus") {
-						withAnimation { includeScreenshot.toggle() }
-					}
-				}
-				if includeScreenshot {
-					ToolbarItem(placement: .topBarTrailing) {
-						Button("Comment", systemImage: commentExpanded ? "text.bubble.fill" : "text.bubble") {
-							withAnimation { commentExpanded.toggle() }
-						}
-					}
-				}
-				ToolbarItem(placement: .confirmationAction) {
-					Button("Send", action: send).disabled(!canSend)
-				}
+				FeedbackEditorToolbar(category: $category, includeScreenshot: $includeScreenshot,
+									  commentExpanded: $commentExpanded, canSend: canSend,
+									  onCancel: controller.cancel, onSend: send)
 			}
+			#if canImport(UIKit)
+			.navigationBarTitleDisplayMode(.inline)
 			.toolbarBackground(.visible, for: .navigationBar)
 			.toolbarBackground(.black, for: .navigationBar)
+			#endif
 		}
 		.preferredColorScheme(.dark)
+	}
+
+	@ViewBuilder private var canvasView: some View {
+		#if canImport(UIKit)
+		MarkupCanvasView(image: draft.originalImage, canvas: canvas, store: store, isCommenting: commentExpanded, displaySize: $displaySize)
+		#else
+		MarkupCanvasView(image: draft.originalImage, store: store, isCommenting: commentExpanded, displaySize: $displaySize)
+		#endif
 	}
 
 	// A text-only report needs a comment; with a screenshot there is always content.
@@ -77,7 +68,7 @@ struct FeedbackEditorScreen: View {
 
 	private func send() {
 		let annotated = includeScreenshot
-			? MarkupFlattener.flatten(base: draft.originalImage, drawing: canvas.drawing, annotations: store.annotations, displaySize: displaySize, cropRect: store.cropRect)
+			? MarkupFlattener.flatten(base: draft.originalImage, strokeImage: strokeImage, annotations: store.annotations, displaySize: displaySize, cropRect: store.cropRect)
 			: nil
 		guard let report = ReportBuilder.makeReport(draft: draft, comment: comment, category: category, annotated: annotated) else {
 			controller.cancel()
@@ -85,5 +76,16 @@ struct FeedbackEditorScreen: View {
 		}
 		controller.submit(report)
 	}
+
+	/// The freehand layer, rasterized at native resolution for the flattener.
+	private var strokeImage: UXImage? {
+		#if canImport(UIKit)
+		guard !canvas.drawing.bounds.isEmpty, displaySize.width > 0 else { return nil }
+		let pixelWidth = CGFloat(draft.originalImage.cgImageRef?.width ?? Int(draft.originalImage.size.width))
+		let scale = pixelWidth / displaySize.width
+		return canvas.drawing.image(from: CGRect(origin: .zero, size: displaySize), scale: scale)
+		#else
+		return FreehandRenderer.image(strokes: store.strokes, size: displaySize)
+		#endif
+	}
 }
-#endif

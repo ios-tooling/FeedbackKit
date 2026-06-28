@@ -1,18 +1,19 @@
 # FeedbackKit
 
-In-app feedback for iOS beta builds and dogfooding. Trigger it from anywhere in your app,
-it captures the current screen like a native iOS screenshot, the tester annotates and
+In-app feedback for iOS and macOS beta builds and dogfooding. Trigger it from anywhere in
+your app, it captures the current screen like a native screenshot, the tester annotates and
 comments, and the report is delivered to a destination you choose for review later.
 
 > Built for **internal testing** — there are no consent dialogs or App Store-facing flows.
 
 ## Features
 
-- **Faithful capture** — composites every window in the active scene (app content, presented
-  sheets, alerts, keyboard) into one image, then a white screenshot flash. Captured *before*
-  any FeedbackKit UI appears, so the editor never ends up in the shot.
-- **Markup** — PencilKit (pen / highlighter / eraser / undo via the native tool picker) plus
-  placeable **arrow, box, text, and blur-redact** (real pixelation) overlays, with a color picker.
+- **Faithful capture** — on iOS, composites every window in the active scene (app content,
+  presented sheets, alerts, keyboard) into one image, then a white screenshot flash; on macOS,
+  snapshots the app's key window (no Screen Recording permission). Captured *before* any
+  FeedbackKit UI appears, so the editor never ends up in the shot.
+- **Markup** — freehand drawing (PencilKit on iOS, a SwiftUI canvas on macOS) plus placeable
+  **arrow, box, text, blur-redact** (real pixelation) overlays and **crop**, with a color picker.
 - **Pluggable delivery** — ships with CloudKit, Slack (inline image upload), and a generic HTTP
   transport. Fan out to several at once. Add your own by conforming to `FeedbackTransport`.
 - **Never loses a report** — a persistent on-disk outbox delivers with retry/backoff and
@@ -23,7 +24,7 @@ comments, and the report is delivered to a destination you choose for review lat
 
 ## Requirements
 
-- iOS 17+ (full experience). macOS 14+ compiles but is deferred — `trigger()` is a logged no-op.
+- iOS 17+ and macOS 14+.
 - Swift 5.9+ / Xcode 15+.
 
 ## Installation
@@ -57,7 +58,7 @@ struct MyApp: App {
     var body: some Scene {
         WindowGroup {
             RootView()
-                .feedbackKit(triggers: [.shake, .programmatic])   // apply once, near the root
+                .feedbackKit(triggers: [.shake, .keyboardShortcut, .programmatic])   // apply once, near the root
         }
     }
 }
@@ -80,14 +81,16 @@ Button("Send Feedback") { FeedbackKit.trigger() }
 
 Pass any combination to `.feedbackKit(triggers:)`:
 
-| Trigger | Description |
-| --- | --- |
-| `.shake` | Shake the device (default). |
-| `.floatingButton` | A draggable bubble, hidden during capture. |
-| `.multiFingerGesture` | Two-finger long-press. |
-| `.programmatic` | Call `FeedbackKit.trigger()`. |
+| Trigger | Platform | Description |
+| --- | --- | --- |
+| `.shake` | iOS | Shake the device. |
+| `.keyboardShortcut` | macOS | ⌘⇧F. |
+| `.floatingButton` | iOS · macOS | A draggable bubble, hidden during capture. |
+| `.multiFingerGesture` | iOS | Two-finger long-press. |
+| `.programmatic` | iOS · macOS | Call `FeedbackKit.trigger()`. |
 
-Default is `[.shake, .programmatic]`. Triggers are suppressed while the editor is open.
+Default is `[.shake, .keyboardShortcut, .programmatic]` — each is ignored on platforms that
+don't support it. Triggers are suppressed while the editor is open.
 
 ## Transports
 
@@ -114,14 +117,15 @@ struct MyTransport: FeedbackTransport {
 
 ## How it works
 
-Trigger → hide FeedbackKit chrome → capture the scene → flash → collect metadata + breadcrumbs →
-present the editor over the frozen image → on **Send**, the markup is flattened into the
-screenshot at native resolution, written to the outbox, and the editor dismisses immediately
-while the outbox delivers in the background.
+Trigger → hide FeedbackKit chrome → capture the screen (scene windows on iOS, the key window
+on macOS) → flash (iOS) → collect metadata + breadcrumbs → present the editor over the frozen
+image in its own window → on **Send**, the markup is flattened into the screenshot at native
+resolution, written to the outbox, and the editor dismisses immediately while the outbox
+delivers in the background.
 
 ## Not yet implemented
 
-- Markup extras: magnifier loupe, crop, emoji stamps.
-- Shake is not detected while a text field is the first responder.
+- Markup extras: magnifier loupe, emoji stamps.
+- Shake (iOS) is not detected while a text field is the first responder.
 
 See [`DESIGN.md`](DESIGN.md) for the full design rationale.

@@ -6,7 +6,6 @@
 //  never appears in the screenshot.
 //
 
-#if canImport(UIKit) && !os(watchOS)
 import SwiftUI
 
 struct FloatingTriggerButton: View {
@@ -34,4 +33,3 @@ struct FloatingTriggerButton: View {
 		.allowsHitTesting(!controller.isCapturing)
 	}
 }
-#endif
