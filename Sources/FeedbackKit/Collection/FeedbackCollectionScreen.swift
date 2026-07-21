@@ -40,8 +40,10 @@ public struct FeedbackCollectionScreen: View {
 			.navigationTitle("Feedback")
 			.toolbar {
 				ToolbarItem(placement: Self.trailing) {
-					if let zipURL = model.zipURL {
-						ShareLink(item: zipURL) { Label("Export All", systemImage: "square.and.arrow.up") }
+					if !model.items.isEmpty || currentDraft != nil {
+						ShareLink(item: ExportBundle(currentDraft: currentDraft), preview: SharePreview("Feedback")) {
+							Label("Export All", systemImage: "square.and.arrow.up")
+						}
 					}
 				}
 				ToolbarItem(placement: Self.trailing) {

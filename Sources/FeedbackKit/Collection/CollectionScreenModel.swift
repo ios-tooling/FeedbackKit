@@ -10,16 +10,12 @@ import SwiftUI
 
 @MainActor @Observable final class CollectionScreenModel {
 	private(set) var items: [CollectionItem] = []
-	private(set) var zipURL: URL?
 
 	private let store: FeedbackCollectionStore?
 
 	init() { store = try? FeedbackCollectionStore() }
 
-	func reload() {
-		items = store?.items() ?? []
-		Task { await refreshZip() }
-	}
+	func reload() { items = store?.items() ?? [] }
 
 	func delete(at offsets: IndexSet) {
 		for index in offsets { try? store?.remove(items[index].id) }
@@ -29,10 +25,5 @@ import SwiftUI
 	func clearAll() {
 		try? store?.removeAll()
 		reload()
-	}
-
-	private func refreshZip() async {
-		guard let store, !items.isEmpty else { zipURL = nil; return }
-		zipURL = await Task.detached(priority: .userInitiated) { try? store.zipArchive() }.value
 	}
 }

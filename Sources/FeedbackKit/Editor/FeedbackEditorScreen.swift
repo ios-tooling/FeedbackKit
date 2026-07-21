@@ -3,46 +3,35 @@
 //  FeedbackKit
 //
 //  Full-screen editor presented over the frozen capture: annotate, comment, categorize,
-//  and send.
+//  and send. All draft state lives in the shared FeedbackDraftEditing.
 //
 
 import SwiftUI
-import CrossPlatformKit
-#if canImport(UIKit)
-import PencilKit
-#endif
 
 struct FeedbackEditorScreen: View {
 	@Bindable var editing: FeedbackDraftEditing
 	@State private var controller = FeedbackController.shared
-	#if canImport(UIKit)
-	@State private var canvas = PKCanvasView()
-	#endif
-	@State private var store = MarkupStore()
-	@State private var displaySize: CGSize = .zero
 	@State private var commentExpanded = true
-	@State private var includeScreenshot = true
-	@State private var dictation = FeedbackDictation()
 
 	private var draft: FeedbackDraft { editing.draft }
 
 	var body: some View {
 		NavigationStack {
 			VStack(spacing: 0) {
-				if includeScreenshot {
-					MarkupToolbar(store: store)
+				if editing.includeScreenshot {
+					MarkupToolbar(store: editing.store)
 					canvasView
-					if commentExpanded { CommentField(text: $editing.comment, dictation: dictation) }
+					if commentExpanded { CommentField(text: $editing.comment, dictation: editing.dictation) }
 				} else {
-					CommentField(text: $editing.comment, dictation: dictation)
+					CommentField(text: $editing.comment, dictation: editing.dictation)
 					Spacer(minLength: 0)
 				}
 			}
-			.onChange(of: store.tool) { if commentExpanded { withAnimation { commentExpanded = false } } }
-			.onDisappear { Task { await dictation.stop() } }
+			.onChange(of: editing.store.tool) { if commentExpanded { withAnimation { commentExpanded = false } } }
+			.onDisappear { Task { await editing.dictation.stop() } }
 			.navigationTitle("Feedback")
 			.toolbar {
-				FeedbackEditorToolbar(category: $editing.category, includeScreenshot: $includeScreenshot,
+				FeedbackEditorToolbar(category: $editing.category, includeScreenshot: $editing.includeScreenshot,
 									  commentExpanded: $commentExpanded, canSend: canSend,
 									  onCancel: cancel, onSend: { Task { await send() } })
 			}
@@ -57,47 +46,32 @@ struct FeedbackEditorScreen: View {
 
 	@ViewBuilder private var canvasView: some View {
 		#if canImport(UIKit)
-		MarkupCanvasView(image: draft.originalImage, canvas: canvas, store: store, isCommenting: commentExpanded, displaySize: $displaySize)
+		MarkupCanvasView(image: draft.originalImage, canvas: editing.canvas, store: editing.store, isCommenting: commentExpanded, displaySize: $editing.displaySize)
 		#else
-		MarkupCanvasView(image: draft.originalImage, store: store, isCommenting: commentExpanded, displaySize: $displaySize)
+		MarkupCanvasView(image: draft.originalImage, store: editing.store, isCommenting: commentExpanded, displaySize: $editing.displaySize)
 		#endif
 	}
 
 	// A text-only report needs a comment; with a screenshot there is always content.
 	private var canSend: Bool {
-		includeScreenshot || !editing.comment.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+		editing.includeScreenshot || !editing.comment.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
 	}
 
 	private func send() async {
-		await dictation.stop()
-		let annotated = includeScreenshot
-			? MarkupFlattener.flatten(base: draft.originalImage, strokeImage: strokeImage, annotations: store.annotations, displaySize: displaySize, cropRect: store.cropRect)
-			: nil
-		guard let report = ReportBuilder.makeReport(draft: draft, comment: editing.comment, category: editing.category, annotated: annotated, audioData: dictation.audioData()) else {
+		await editing.dictation.stop()
+		guard let report = editing.buildReport() else {
 			cancel()
 			return
 		}
-		dictation.discard()
+		editing.dictation.discard()
 		controller.submit(report)
 	}
 
 	private func cancel() {
 		Task {
-			await dictation.stop()
-			dictation.discard()
+			await editing.dictation.stop()
+			editing.dictation.discard()
 			controller.cancel()
 		}
-	}
-
-	/// The freehand layer, rasterized at native resolution for the flattener.
-	private var strokeImage: UXImage? {
-		#if canImport(UIKit)
-		guard !canvas.drawing.bounds.isEmpty, displaySize.width > 0 else { return nil }
-		let pixelWidth = CGFloat(draft.originalImage.cgImageRef?.width ?? Int(draft.originalImage.size.width))
-		let scale = pixelWidth / displaySize.width
-		return canvas.drawing.image(from: CGRect(origin: .zero, size: displaySize), scale: scale)
-		#else
-		return FreehandRenderer.image(strokes: store.strokes, size: displaySize)
-		#endif
 	}
 }

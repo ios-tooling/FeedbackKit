@@ -32,9 +32,11 @@ mistakes hide until then. Platform-specific code is fenced with `#if canImport(U
   instead of sending). `HTTPSupport` holds shared URLSession helpers.
 - `Collection/` — the local collect-and-export route: `FeedbackCollectionStore` (directory
   bundles + `NSFileCoordinator` zip, whole-collection or a single bundle), `CollectionItem`,
-  `SharedReport` (a `Transferable` that zips one report on demand for a per-row `ShareLink`), and
-  the public `FeedbackCollectionScreen` (+ `CollectionScreenModel`, `CollectionRow`) for
-  review/delete/share — per-report Share on each row, whole-set Export in the toolbar.
+  `SharedReport` (a `Transferable` that zips one report on demand for a per-row `ShareLink`),
+  `ExportBundle` (a `Transferable` that stages saved bundles **plus** the current in-progress
+  report — when `FeedbackDraftEditing.hasContent` — and zips them for "Export All"), and the public
+  `FeedbackCollectionScreen` (+ `CollectionScreenModel`, `CollectionRow`, `DraftRow`) for
+  review/delete/share.
 - `Outbox/` — `OutboxStore` (one JSON file per report on disk), `OutboxSender` (headless drain),
   `FeedbackOutbox` (`@MainActor @Observable` manager: retry/backoff + Achtung toasts).
 - `Capture/` — `ScreenCapturer` (iOS: composites all scene windows; macOS: key-window

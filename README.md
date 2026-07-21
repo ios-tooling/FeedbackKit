@@ -140,9 +140,10 @@ Each report becomes its own folder — `feedback.json` plus `screenshot.jpg` / `
 When feedback is triggered, the window is a **swipe pager**: the editor for the report you're
 filing now, then swipe left (iOS) / the second tab (macOS) to the export screen — no host code
 needed. The report you're currently writing appears there too, as a live **"Draft — unsent"** row
-that updates as you type; it becomes a saved, shareable item once you tap Send. You can also
-**Export All** (zip the whole collection to the share sheet), **Clear All** (wipe it, with
-confirmation), delete a single item (swipe), or **Share** one report from its row.
+that updates as you type; it becomes a saved, shareable item once you tap Send. **Export All**
+zips the whole collection to the share sheet — and folds in the current report too, as long as
+you've added something to it (text, audio, or markup). You can also **Clear All** (wipe the
+collection, with confirmation), delete a single item (swipe), or **Share** one report from its row.
 
 You can also present the same export screen standalone, e.g. from a debug menu:
 
