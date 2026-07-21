@@ -26,6 +26,11 @@ import SwiftUI
 		reload()
 	}
 
+	func clearAll() {
+		try? store?.removeAll()
+		reload()
+	}
+
 	private func refreshZip() async {
 		guard let store, !items.isEmpty else { zipURL = nil; return }
 		zipURL = await Task.detached(priority: .userInitiated) { try? store.zipArchive() }.value

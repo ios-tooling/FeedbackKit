@@ -44,7 +44,8 @@ mistakes hide until then. Platform-specific code is fenced with `#if canImport(U
   affordances: shake/multi-finger gesture (iOS), keyboard shortcut (macOS), floating button.
 - `Configuration/` — `FeedbackKit` (public facade), `FeedbackController`
   (`@MainActor @Observable` brain), configuration, `FeedbackDraft`, `FeedbackTriggers`.
-- `Editor/` + `Editor/Markup/` — `FeedbackEditorScreen` + `FeedbackEditorToolbar`, the dictation-
+- `Editor/` + `Editor/Markup/` — `FeedbackPagerScreen` (the presented experience: editor on page 1,
+  swipe to the export screen), `FeedbackEditorScreen` + `FeedbackEditorToolbar`, the dictation-
   enabled `CommentField` (shown by default) + `FeedbackDictation` (drives TapeDeck's `Transcriber`
   + `AudioRecorder` off one mic button), the freehand
   canvas (PencilKit on iOS, `FreehandCanvasView`/`FreehandRenderer` on macOS), structured-
@@ -102,6 +103,10 @@ export UI reads its bundles straight off disk via `FeedbackCollectionStore`.
 - **Editor window.** The editor lives in its own top-level window (UIWindow at `.alert` level on
   iOS, a centered NSWindow on macOS) so it covers sheets the app already has up. On macOS, closing
   the window via its close button is treated as Cancel.
+- **Swipe pager.** `FeedbackWindowPresenter` presents `FeedbackPagerScreen`, a `TabView` — page
+  style (swipe + dots) on iOS, standard tabs on macOS. Page 1 is the editor, page 2 is
+  `FeedbackCollectionScreen`. Note the iOS page swipe can compete with the markup canvas's drag
+  gestures while a tool is active; verify on-device if you touch either.
 - **Tests are backend + flattener.** Capture/trigger/window UI still needs a real host app to
   verify; there are no headless UI tests. Don't claim UI works from `swift test` alone.
 

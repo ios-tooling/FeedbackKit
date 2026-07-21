@@ -135,12 +135,18 @@ FeedbackKit.configure(transports: [LocalCollectionTransport()])   // collect-onl
 ```
 
 Each report becomes its own folder — `feedback.json` plus `screenshot.jpg` / `original.jpg` /
-`audio.m4a` sidecars. Present the built-in review + export screen from a debug menu:
+`audio.m4a` sidecars.
+
+When feedback is triggered, the window is a **swipe pager**: the editor for the report you're
+filing now, then swipe left (iOS) / the second tab (macOS) to the export screen — no host code
+needed. There you can **Export All** (zip the whole collection to the share sheet), **Clear All**
+(wipe it, with confirmation), delete a single item (swipe), or **Share** one report from its row.
+
+You can also present the same export screen standalone, e.g. from a debug menu:
 
 ```swift
 .sheet(isPresented: $showFeedback) {
-    FeedbackKit.collectionScreen()   // list + swipe-to-delete; Share per row (one report)
-                                     // or the toolbar Export (the whole set as one zip)
+    FeedbackKit.collectionScreen()
 }
 ```
 

@@ -32,7 +32,7 @@ import SwiftUI
 
 	func present(_ draft: FeedbackDraft) {
 		guard window == nil, let scene = activeWindowScene else { return }
-		let host = UIHostingController(rootView: FeedbackEditorScreen(draft: draft))
+		let host = UIHostingController(rootView: FeedbackPagerScreen(draft: draft))
 		host.view.backgroundColor = .systemBackground
 
 		let window = UIWindow(windowScene: scene)
@@ -67,7 +67,7 @@ import SwiftUI
 
 	func present(_ draft: FeedbackDraft) {
 		guard window == nil else { return }
-		let host = NSHostingController(rootView: FeedbackEditorScreen(draft: draft))
+		let host = NSHostingController(rootView: FeedbackPagerScreen(draft: draft))
 		let window = NSWindow(contentViewController: host)
 		window.title = "Feedback"
 		window.styleMask = [.titled, .closable, .fullSizeContentView]

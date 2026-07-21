@@ -55,6 +55,16 @@ struct CollectionTests {
 		#expect(store.isEmpty)
 	}
 
+	@Test func removeAllEmptiesTheCollection() throws {
+		let store = try FeedbackCollectionStore(directory: makeTempDirectory())
+		try store.write(report(comment: "a", createdAt: Date(timeIntervalSince1970: 1)))
+		try store.write(report(comment: "b", createdAt: Date(timeIntervalSince1970: 2)))
+		#expect(store.items().count == 2)
+
+		try store.removeAll()
+		#expect(store.isEmpty)
+	}
+
 	@Test func zipArchiveProducesNonEmptyFile() throws {
 		let store = try FeedbackCollectionStore(directory: makeTempDirectory())
 		try store.write(report(comment: "zip", createdAt: Date(timeIntervalSince1970: 1)))

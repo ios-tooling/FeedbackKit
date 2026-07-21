@@ -46,6 +46,13 @@ public struct FeedbackCollectionStore: Sendable {
 		try FileManager.default.removeItem(at: directory.appendingPathComponent(id.uuidString, isDirectory: true))
 	}
 
+	/// Delete every bundle in the collection (including any unreadable leftovers).
+	public func removeAll() throws {
+		for url in (try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)) ?? [] {
+			try FileManager.default.removeItem(at: url)
+		}
+	}
+
 	/// Zip the whole collection to a temp file, returning its URL for sharing.
 	public func zipArchive(named name: String = "Feedback") throws -> URL {
 		try Self.zip(directory: directory, named: name)

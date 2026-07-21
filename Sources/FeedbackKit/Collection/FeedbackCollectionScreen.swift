@@ -11,6 +11,7 @@ import SwiftUI
 
 public struct FeedbackCollectionScreen: View {
 	@State private var model = CollectionScreenModel()
+	@State private var confirmingClear = false
 
 	public init() {}
 
@@ -29,11 +30,32 @@ public struct FeedbackCollectionScreen: View {
 			}
 			.navigationTitle("Feedback")
 			.toolbar {
-				if let zipURL = model.zipURL {
-					ShareLink(item: zipURL) { Label("Export", systemImage: "square.and.arrow.up") }
+				ToolbarItem(placement: Self.trailing) {
+					if let zipURL = model.zipURL {
+						ShareLink(item: zipURL) { Label("Export All", systemImage: "square.and.arrow.up") }
+					}
 				}
+				ToolbarItem(placement: Self.trailing) {
+					if !model.items.isEmpty {
+						Button(role: .destructive) { confirmingClear = true } label: { Label("Clear All", systemImage: "trash") }
+					}
+				}
+			}
+			.alert("Clear all feedback?", isPresented: $confirmingClear) {
+				Button("Clear All", role: .destructive) { model.clearAll() }
+				Button("Cancel", role: .cancel) {}
+			} message: {
+				Text("This permanently deletes every collected report on this device.")
 			}
 		}
 		.task { model.reload() }
+	}
+
+	private static var trailing: ToolbarItemPlacement {
+		#if canImport(UIKit)
+		.topBarTrailing
+		#else
+		.primaryAction
+		#endif
 	}
 }
