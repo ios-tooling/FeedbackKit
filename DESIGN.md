@@ -8,8 +8,9 @@ Trigger → capture screen → annotate → send to pluggable destinations for l
 - **Audience:** internal testers / dogfooding. Not shipped to production end users — no
   consent dialogs or PII-compliance burden (an opt-in blur tool still exists for convenience).
 - **Platforms:** iOS (iPhone + iPad) **and macOS**. **watchOS dropped** from the manifest.
-- **Deployment targets:** iOS 17, macOS 14 — forced upward from the original iOS 16 by the
-  Chronicle (iOS 17) and Convey/Chronicle (macOS 14) dependencies.
+- **Deployment targets:** iOS 18, macOS 15 — raised from iOS 17 / macOS 14 by the **TapeDeck**
+  dependency (voice dictation + recording). The manifest is `swift-tools-version: 6.0` (needed to
+  name `.v18`/`.v15`) but pins the **Swift 5 language mode** to avoid an unrelated concurrency migration.
 
 ## Triggers
 
@@ -36,8 +37,13 @@ Default: `[.shake, .keyboardShortcut, .programmatic]`.
 
 ## Editor
 
-- Layout: annotated image + **collapsible** comment field + **category picker**
+- Layout: annotated image + comment field (**shown by default** on entry) + **category picker**
   (Bug / Idea / Other). No severity in v1.
+- **Voice dictation:** a mic button in the comment field starts a live transcription session via
+  **TapeDeck** (`Transcriber` — SpeechAnalyzer on OS 26+, SFSpeechRecognizer below). Finalized
+  speech is appended to the comment; the raw audio is recorded to `.m4a` in parallel
+  (`AudioRecorder`, off the same shared mic tap) and attached to the report. Permissions come from
+  `TapeDeckPermissions` — the host app must supply the mic + speech-recognition usage strings.
 - Markup: **hybrid** — freehand drawing (PencilKit `PKCanvasView` on iOS; a SwiftUI
   `Canvas` + drag drawer on macOS, since PencilKit is iOS-only) + a custom overlay for
   structured tools: **arrow, box/rectangle, text label, blur-redact region** (real pixelation
@@ -54,6 +60,8 @@ Default: `[.shake, .keyboardShortcut, .programmatic]`.
 
 - **Flattened annotated image** (base + strokes + overlays) **+ original unannotated capture**,
   both **JPEG ~0.85**.
+- **Dictated audio** (`audioData`, AAC/`.m4a`), `nil` when none was recorded. Materialized to disk
+  only by the collection route; remote transports convey the spoken content via the transcript.
 - Comment, category.
 - **Auto-collected (always):** app version+build, iOS version, device model, locale/timezone,
   screen size + orientation, timestamp, free disk/memory, network reachability (Convey).
@@ -75,6 +83,14 @@ Default: `[.shake, .keyboardShortcut, .programmatic]`.
     Built on `URLSession`, **not** Convey: Convey's shipped API only exposes a single shared
     `ConveyServer.default`, which a transport can't borrow without clobbering the host app's
     networking config (and an unconfigured server fails silently). Slack uses `URLSession` too.
+  - **Local collection** (`LocalCollectionTransport`) — the "collect and export later" route.
+    Instead of sending, it writes each report as a **directory bundle** (`feedback.json` +
+    `screenshot.jpg`/`original.jpg`/`audio.m4a` sidecars) into a persistent `FeedbackKitCollection`
+    folder. Just another transport, so it **fans out alongside** the remote ones (or is used alone
+    for a collect-only app). `FeedbackCollectionStore` manages the folders; `FeedbackKit.exportCollection()`
+    zips the whole folder (via `NSFileCoordinator` `.forUploading`, no new dependency) and
+    `FeedbackKit.collectionScreen()` is a ready-made list with delete + `ShareLink` export (email,
+    AirDrop, Files, …).
 - **Persistent on-disk outbox:** on Send, serialize report to disk, dismiss editor instantly, a
   background sender drains with retry/backoff across launches. **Achtung** toasts for
   success/failure + a "N pending" state.
@@ -106,8 +122,9 @@ userID) is resolved at capture time so it is always current.
 
 ## Dependencies
 
-Suite, CrossPlatformKit + **Chronicle**, **Achtung**. CloudKit, PencilKit (system).
-Convey was dropped — transports use `URLSession` directly (see Transport section).
+Suite, CrossPlatformKit + **Chronicle**, **Achtung**, **TapeDeck** (voice dictation/recording).
+CloudKit, PencilKit, Speech, AVFoundation (system). Convey was dropped — transports use
+`URLSession` directly (see Transport section).
 
 ## Testing
 

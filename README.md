@@ -16,6 +16,12 @@ comments, and the report is delivered to a destination you choose for review lat
   **arrow, box, text, blur-redact** (real pixelation) overlays and **crop**, with a color picker.
 - **Pluggable delivery** — ships with CloudKit, Slack (inline image upload), and a generic HTTP
   transport. Fan out to several at once. Add your own by conforming to `FeedbackTransport`.
+- **Voice dictation** — a mic button in the comment field transcribes speech into the comment
+  (via [TapeDeck](https://github.com/ios-tooling/TapeDeck), on-device) and records the audio
+  alongside, attached to the report.
+- **Collect & export** — add `LocalCollectionTransport` to keep feedback on-device: each report
+  (text + audio + screenshot) is bundled into its own folder, ready to review and bulk-export as a
+  single zip via email, AirDrop, or Files — for a build without a live backend.
 - **Never loses a report** — a persistent on-disk outbox delivers with retry/backoff and
   survives app kills, so reports filed offline send when the network returns.
 - **Rich context** — auto-attaches app/device/OS metadata and recent
@@ -24,8 +30,11 @@ comments, and the report is delivered to a destination you choose for review lat
 
 ## Requirements
 
-- iOS 17+ and macOS 14+.
-- Swift 5.9+ / Xcode 15+.
+- iOS 18+ and macOS 15+ (raised by TapeDeck, used for voice dictation).
+- Swift 6 toolchain / Xcode 16+ (the package builds in Swift 5 language mode).
+- For voice dictation, add these keys to your app's `Info.plist`:
+  - `NSMicrophoneUsageDescription` — e.g. "Records a voice note with your feedback."
+  - `NSSpeechRecognitionUsageDescription` — e.g. "Transcribes your spoken feedback into text."
 
 ## Installation
 
@@ -99,6 +108,7 @@ don't support it. Triggers are suppressed while the editor is open.
 | `CloudKitTransport(containerID:scope:recordType:)` | Add the CloudKit capability + container to your app's entitlements. A `FeedbackReport` record type is created on first save. | CloudKit dashboard |
 | `SlackTransport(botToken:channelID:)` | Bot token with the `files:write` scope; bot must be in the channel. | Slack channel (image inline) |
 | `HTTPTransport(endpoint:headers:)` | Any endpoint that accepts a JSON `POST`. | Your server |
+| `LocalCollectionTransport(directory:)` | None — writes bundles on-device. | In-app collection screen / exported zip |
 | `MultiTransport([…])` | Wraps several transports; fans out concurrently. | — |
 
 Delivery is **at-least-once**: if any transport fails, the report stays queued and retries, which
@@ -109,9 +119,36 @@ can re-deliver to transports that already succeeded.
 ```swift
 struct MyTransport: FeedbackTransport {
     func send(_ report: FeedbackReport) async throws {
-        // report.annotatedImageData, .originalImageData, .comment, .category,
-        // .metadata, .context, .userID, .breadcrumbs
+        // report.annotatedImageData, .originalImageData, .audioData, .comment,
+        // .category, .metadata, .context, .userID, .breadcrumbs
     }
+}
+```
+
+## Collect & export
+
+For builds without a live backend, keep feedback on-device and export it in bulk later. Add
+`LocalCollectionTransport` (on its own, or alongside remote transports to do both):
+
+```swift
+FeedbackKit.configure(transports: [LocalCollectionTransport()])   // collect-only
+```
+
+Each report becomes its own folder — `feedback.json` plus `screenshot.jpg` / `original.jpg` /
+`audio.m4a` sidecars. Present the built-in review + export screen from a debug menu:
+
+```swift
+.sheet(isPresented: $showFeedback) {
+    FeedbackKit.collectionScreen()   // list + swipe-to-delete; Share per row (one report)
+                                     // or the toolbar Export (the whole set as one zip)
+}
+```
+
+Or drive the export yourself:
+
+```swift
+if let zipURL = await FeedbackKit.exportCollection() {
+    // hand zipURL to a ShareLink, mail composer, etc.
 }
 ```
 
