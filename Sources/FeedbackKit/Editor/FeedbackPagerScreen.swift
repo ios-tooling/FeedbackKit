@@ -20,14 +20,17 @@ struct FeedbackPagerScreen: View {
 		TabView(selection: $selection) {
 			FeedbackEditorScreen(editing: editing)
 				.tag(0)
+			#if canImport(AppKit)
 				.tabItem { Label("Report", systemImage: "square.and.pencil") }
+			#endif
 			FeedbackCollectionScreen(currentDraft: editing)
 				.tag(1)
+			#if canImport(AppKit)
 				.tabItem { Label("Export", systemImage: "tray.full") }
+			#endif
 		}
 		#if canImport(UIKit)
-		.tabViewStyle(.page(indexDisplayMode: .always))
-		.indexViewStyle(.page(backgroundDisplayMode: .always))
+		.tabViewStyle(.page(indexDisplayMode: .never))
 		#endif
 		.preferredColorScheme(.dark)
 	}
