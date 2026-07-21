@@ -33,6 +33,6 @@ struct ExportBundle: Transferable {
 			try FeedbackCollectionStore(directory: staging).write(report)
 		}
 
-		return try FeedbackCollectionStore.zip(directory: staging, named: "Feedback")
+		return try FeedbackCollectionStore.zip(directory: staging, named: FeedbackCollectionStore.defaultArchiveName)
 	}
 }

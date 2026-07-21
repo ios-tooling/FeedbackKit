@@ -53,9 +53,16 @@ public struct FeedbackCollectionStore: Sendable {
 		}
 	}
 
+	/// The default share name, e.g. "MyApp Feedback".
+	public static var defaultArchiveName: String {
+		let display = Bundle.main.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String
+		let app = display ?? Bundle.main.name
+		return "\(app.isEmpty ? "App" : app) Feedback"
+	}
+
 	/// Zip the whole collection to a temp file, returning its URL for sharing.
-	public func zipArchive(named name: String = "Feedback") throws -> URL {
-		try Self.zip(directory: directory, named: name)
+	public func zipArchive(named name: String? = nil) throws -> URL {
+		try Self.zip(directory: directory, named: name ?? Self.defaultArchiveName)
 	}
 
 	/// Zip one directory — the whole collection or a single report bundle — to a temp file.

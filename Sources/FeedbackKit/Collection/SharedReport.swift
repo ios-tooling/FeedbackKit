@@ -14,7 +14,7 @@ struct SharedReport: Transferable {
 
 	static var transferRepresentation: some TransferRepresentation {
 		FileRepresentation(exportedContentType: .zip) { shared in
-			SentTransferredFile(try FeedbackCollectionStore.zip(directory: shared.item.directory, named: shared.item.id.uuidString))
+			SentTransferredFile(try FeedbackCollectionStore.zip(directory: shared.item.directory, named: FeedbackCollectionStore.defaultArchiveName))
 		}
 	}
 }
