@@ -12,6 +12,7 @@ import SwiftUI
 public struct FeedbackCollectionScreen: View {
 	@State private var model = CollectionScreenModel()
 	@State private var confirmingClear = false
+	@State private var hasSharedThisSession = false
 	private let currentDraft: FeedbackDraftEditing?
 
 	public init() { currentDraft = nil }
@@ -41,17 +42,14 @@ public struct FeedbackCollectionScreen: View {
 			.toolbar {
 				ToolbarItem(placement: Self.trailing) {
 					if !model.items.isEmpty || currentDraft != nil {
-						ShareLink(item: ExportBundle(currentDraft: currentDraft), preview: SharePreview("Feedback")) {
+						ShareLink(item: ExportBundle(currentDraft: currentDraft), preview: SharePreview(FeedbackCollectionStore.defaultArchiveName)) {
 							Label("Export All", systemImage: "square.and.arrow.up")
 						}
-					}
-				}
-				ToolbarItem(placement: Self.trailing) {
-					if !model.items.isEmpty {
-						Button(role: .destructive) { confirmingClear = true } label: { Label("Clear All", systemImage: "trash") }
+						.simultaneousGesture(TapGesture().onEnded { hasSharedThisSession = true })
 					}
 				}
 			}
+			.safeAreaInset(edge: .bottom) { clearButton }
 			.alert("Clear all feedback?", isPresented: $confirmingClear) {
 				Button("Clear All", role: .destructive) { model.clearAll() }
 				Button("Cancel", role: .cancel) {}
@@ -60,6 +58,23 @@ public struct FeedbackCollectionScreen: View {
 			}
 		}
 		.task { model.reload() }
+	}
+
+	@ViewBuilder private var clearButton: some View {
+		if !model.items.isEmpty {
+			Button(role: .destructive, action: clearTapped) {
+				Label("Clear All Feedback", systemImage: "trash").frame(maxWidth: .infinity)
+			}
+			.buttonStyle(.bordered)
+			.tint(.red)
+			.padding()
+			.background(.bar)
+		}
+	}
+
+	// No confirmation once the tester has exported this session — they already have a copy.
+	private func clearTapped() {
+		if hasSharedThisSession { model.clearAll() } else { confirmingClear = true }
 	}
 
 	private static var trailing: ToolbarItemPlacement {
