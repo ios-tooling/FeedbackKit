@@ -22,8 +22,9 @@ struct FeedbackEditorScreen: View {
 	@State private var displaySize: CGSize = .zero
 	@State private var comment = ""
 	@State private var category: FeedbackCategory = .bug
-	@State private var commentExpanded = false
+	@State private var commentExpanded = true
 	@State private var includeScreenshot = true
+	@State private var dictation = FeedbackDictation()
 
 	var body: some View {
 		NavigationStack {
@@ -31,18 +32,19 @@ struct FeedbackEditorScreen: View {
 				if includeScreenshot {
 					MarkupToolbar(store: store)
 					canvasView
-					if commentExpanded { CommentField(text: $comment) }
+					if commentExpanded { CommentField(text: $comment, dictation: dictation) }
 				} else {
-					CommentField(text: $comment)
+					CommentField(text: $comment, dictation: dictation)
 					Spacer(minLength: 0)
 				}
 			}
 			.onChange(of: store.tool) { if commentExpanded { withAnimation { commentExpanded = false } } }
+			.onDisappear { Task { await dictation.stop() } }
 			.navigationTitle("Feedback")
 			.toolbar {
 				FeedbackEditorToolbar(category: $category, includeScreenshot: $includeScreenshot,
 									  commentExpanded: $commentExpanded, canSend: canSend,
-									  onCancel: controller.cancel, onSend: send)
+									  onCancel: cancel, onSend: { Task { await send() } })
 			}
 			#if canImport(UIKit)
 			.navigationBarTitleDisplayMode(.inline)
@@ -66,15 +68,25 @@ struct FeedbackEditorScreen: View {
 		includeScreenshot || !comment.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
 	}
 
-	private func send() {
+	private func send() async {
+		await dictation.stop()
 		let annotated = includeScreenshot
 			? MarkupFlattener.flatten(base: draft.originalImage, strokeImage: strokeImage, annotations: store.annotations, displaySize: displaySize, cropRect: store.cropRect)
 			: nil
-		guard let report = ReportBuilder.makeReport(draft: draft, comment: comment, category: category, annotated: annotated) else {
-			controller.cancel()
+		guard let report = ReportBuilder.makeReport(draft: draft, comment: comment, category: category, annotated: annotated, audioData: dictation.audioData()) else {
+			cancel()
 			return
 		}
+		dictation.discard()
 		controller.submit(report)
+	}
+
+	private func cancel() {
+		Task {
+			await dictation.stop()
+			dictation.discard()
+			controller.cancel()
+		}
 	}
 
 	/// The freehand layer, rasterized at native resolution for the flattener.

@@ -16,8 +16,9 @@ import AppKit
 enum ReportBuilder {
 	static let jpegQuality: CGFloat = 0.85
 
-	/// Pass `annotated: nil` for a text-only report (the tester hid the screenshot).
-	@MainActor static func makeReport(draft: FeedbackDraft, comment: String, category: FeedbackCategory, annotated: UXImage?) -> FeedbackReport? {
+	/// Pass `annotated: nil` for a text-only report (the tester hid the screenshot) and
+	/// `audioData: nil` when no dictation was recorded.
+	@MainActor static func makeReport(draft: FeedbackDraft, comment: String, category: FeedbackCategory, annotated: UXImage?, audioData: Data? = nil) -> FeedbackReport? {
 		let annotatedData = annotated?.jpegData(compressionQuality: jpegQuality)
 		if annotated != nil, annotatedData == nil { return nil }
 		return FeedbackReport(
@@ -30,7 +31,8 @@ enum ReportBuilder {
 			userID: draft.userID,
 			breadcrumbs: draft.breadcrumbs,
 			annotatedImageData: annotatedData,
-			originalImageData: annotated == nil ? nil : draft.originalImage.jpegData(compressionQuality: jpegQuality)
+			originalImageData: annotated == nil ? nil : draft.originalImage.jpegData(compressionQuality: jpegQuality),
+			audioData: audioData
 		)
 	}
 }
