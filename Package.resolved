@@ -1,4 +1,5 @@
 {
+  "originHash" : "ef0f79bd45b3b748980bde1461d773928c05210b973248223d8bb2f1cfea9d03",
   "pins" : [
     {
       "identity" : "achtung",
@@ -62,7 +63,16 @@
         "revision" : "c15cd80a5870989c6d12ecdcad1e32d81bf550a8",
         "version" : "0.0.5"
       }
+    },
+    {
+      "identity" : "tapedeck",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/ios-tooling/TapeDeck.git",
+      "state" : {
+        "revision" : "c06b1ebd24db54f25205bd57fd17053116daedf4",
+        "version" : "0.4.2"
+      }
     }
   ],
-  "version" : 2
+  "version" : 3
 }
