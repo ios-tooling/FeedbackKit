@@ -45,7 +45,9 @@ mistakes hide until then. Platform-specific code is fenced with `#if canImport(U
 - `Configuration/` — `FeedbackKit` (public facade), `FeedbackController`
   (`@MainActor @Observable` brain), configuration, `FeedbackDraft`, `FeedbackTriggers`.
 - `Editor/` + `Editor/Markup/` — `FeedbackPagerScreen` (the presented experience: editor on page 1,
-  swipe to the export screen), `FeedbackEditorScreen` + `FeedbackEditorToolbar`, the dictation-
+  swipe to the export screen) owns a shared `FeedbackDraftEditing` (`@Observable`: the draft +
+  live comment/category) read by both pages so the in-progress report shows as a live `DraftRow`
+  on the export screen, `FeedbackEditorScreen` + `FeedbackEditorToolbar`, the dictation-
   enabled `CommentField` (shown by default) + `FeedbackDictation` (drives TapeDeck's `Transcriber`
   + `AudioRecorder` off one mic button), the freehand
   canvas (PencilKit on iOS, `FreehandCanvasView`/`FreehandRenderer` on macOS), structured-

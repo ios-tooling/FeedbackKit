@@ -12,19 +12,28 @@ import SwiftUI
 public struct FeedbackCollectionScreen: View {
 	@State private var model = CollectionScreenModel()
 	@State private var confirmingClear = false
+	private let currentDraft: FeedbackDraftEditing?
 
-	public init() {}
+	public init() { currentDraft = nil }
+	init(currentDraft: FeedbackDraftEditing?) { self.currentDraft = currentDraft }
 
 	public var body: some View {
 		NavigationStack {
 			Group {
-				if model.items.isEmpty {
+				if currentDraft == nil, model.items.isEmpty {
 					ContentUnavailableView("No Feedback Yet", systemImage: "tray",
 										   description: Text("Collected feedback will appear here, ready to export."))
 				} else {
 					List {
-						ForEach(model.items) { CollectionRow(item: $0) }
-							.onDelete(perform: model.delete)
+						if let currentDraft {
+							Section("In Progress") { DraftRow(editing: currentDraft) }
+						}
+						if !model.items.isEmpty {
+							Section("Collected") {
+								ForEach(model.items) { CollectionRow(item: $0) }
+									.onDelete(perform: model.delete)
+							}
+						}
 					}
 				}
 			}

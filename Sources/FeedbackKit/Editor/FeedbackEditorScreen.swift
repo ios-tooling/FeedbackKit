@@ -13,18 +13,18 @@ import PencilKit
 #endif
 
 struct FeedbackEditorScreen: View {
-	let draft: FeedbackDraft
+	@Bindable var editing: FeedbackDraftEditing
 	@State private var controller = FeedbackController.shared
 	#if canImport(UIKit)
 	@State private var canvas = PKCanvasView()
 	#endif
 	@State private var store = MarkupStore()
 	@State private var displaySize: CGSize = .zero
-	@State private var comment = ""
-	@State private var category: FeedbackCategory = .bug
 	@State private var commentExpanded = true
 	@State private var includeScreenshot = true
 	@State private var dictation = FeedbackDictation()
+
+	private var draft: FeedbackDraft { editing.draft }
 
 	var body: some View {
 		NavigationStack {
@@ -32,9 +32,9 @@ struct FeedbackEditorScreen: View {
 				if includeScreenshot {
 					MarkupToolbar(store: store)
 					canvasView
-					if commentExpanded { CommentField(text: $comment, dictation: dictation) }
+					if commentExpanded { CommentField(text: $editing.comment, dictation: dictation) }
 				} else {
-					CommentField(text: $comment, dictation: dictation)
+					CommentField(text: $editing.comment, dictation: dictation)
 					Spacer(minLength: 0)
 				}
 			}
@@ -42,7 +42,7 @@ struct FeedbackEditorScreen: View {
 			.onDisappear { Task { await dictation.stop() } }
 			.navigationTitle("Feedback")
 			.toolbar {
-				FeedbackEditorToolbar(category: $category, includeScreenshot: $includeScreenshot,
+				FeedbackEditorToolbar(category: $editing.category, includeScreenshot: $includeScreenshot,
 									  commentExpanded: $commentExpanded, canSend: canSend,
 									  onCancel: cancel, onSend: { Task { await send() } })
 			}
@@ -65,7 +65,7 @@ struct FeedbackEditorScreen: View {
 
 	// A text-only report needs a comment; with a screenshot there is always content.
 	private var canSend: Bool {
-		includeScreenshot || !comment.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+		includeScreenshot || !editing.comment.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
 	}
 
 	private func send() async {
@@ -73,7 +73,7 @@ struct FeedbackEditorScreen: View {
 		let annotated = includeScreenshot
 			? MarkupFlattener.flatten(base: draft.originalImage, strokeImage: strokeImage, annotations: store.annotations, displaySize: displaySize, cropRect: store.cropRect)
 			: nil
-		guard let report = ReportBuilder.makeReport(draft: draft, comment: comment, category: category, annotated: annotated, audioData: dictation.audioData()) else {
+		guard let report = ReportBuilder.makeReport(draft: draft, comment: editing.comment, category: editing.category, annotated: annotated, audioData: dictation.audioData()) else {
 			cancel()
 			return
 		}

@@ -9,15 +9,19 @@
 import SwiftUI
 
 struct FeedbackPagerScreen: View {
-	let draft: FeedbackDraft
+	@State private var editing: FeedbackDraftEditing
 	@State private var selection = 0
+
+	init(draft: FeedbackDraft) {
+		_editing = State(initialValue: FeedbackDraftEditing(draft: draft))
+	}
 
 	var body: some View {
 		TabView(selection: $selection) {
-			FeedbackEditorScreen(draft: draft)
+			FeedbackEditorScreen(editing: editing)
 				.tag(0)
 				.tabItem { Label("Report", systemImage: "square.and.pencil") }
-			FeedbackCollectionScreen()
+			FeedbackCollectionScreen(currentDraft: editing)
 				.tag(1)
 				.tabItem { Label("Export", systemImage: "tray.full") }
 		}
