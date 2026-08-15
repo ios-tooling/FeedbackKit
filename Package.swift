@@ -18,10 +18,10 @@ let package = Package(
             targets: ["FeedbackKit"]),
     ],
     dependencies: [
-		.package(url: "https://github.com/ios-tooling/Suite.git", from: "1.4.13"),
+		.package(url: "https://github.com/ios-tooling/Suite.git", from: "1.4.17"),
 		.package(url: "https://github.com/ios-tooling/CrossPlatformKit.git", from: "1.0.13"),
 		.package(url: "https://github.com/ios-tooling/Chronicle.git", from: "0.0.29"),
-		.package(url: "https://github.com/ios-tooling/Achtung.git", from: "0.5.4"),
+		.package(url: "https://github.com/ios-tooling/Achtung.git", from: "0.5.6"),
 		.package(url: "https://github.com/ios-tooling/TapeDeck.git", from: "0.4.3"),
     ],
     targets: [

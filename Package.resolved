@@ -1,13 +1,13 @@
 {
-  "originHash" : "b66b385397bd47070dc9e3ce098007d6f9448391588e321e7b646d31bffdf5b0",
+  "originHash" : "c15311a8ccf8137cff9ab9adb9bc1a3d662dd86c1ce4d26f69ecf3253d0174f4",
   "pins" : [
     {
       "identity" : "achtung",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/ios-tooling/Achtung.git",
       "state" : {
-        "revision" : "3b338f5aef2dc0d934ac37003c55f343dd43bb97",
-        "version" : "0.5.4"
+        "revision" : "b91fc4fd3f2cb6da356653cbb99381a6c09256da",
+        "version" : "0.5.6"
       }
     },
     {
@@ -42,8 +42,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/ios-tooling/Suite.git",
       "state" : {
-        "revision" : "c74afa9df076e52bc54e9b91973b9adc368aff72",
-        "version" : "1.4.14"
+        "revision" : "4d0669feeb84eb42e0314aa9f85a049e5b77f60b",
+        "version" : "1.4.17"
       }
     },
     {

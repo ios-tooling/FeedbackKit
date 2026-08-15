@@ -25,6 +25,7 @@ struct FeedbackKitModifier: ViewModifier {
 			.overlay { gestureOverlay }
 			.overlay { if triggers.contains(.floatingButton) { FloatingTriggerButton() } }
 			.task { await observeShakes() }
+			.task { await observeScreenshots() }
 			// Both the flash and the editor live in their own windows so they show over
 			// any sheet the app already has up (a root overlay/.fullScreenCover would be
 			// blocked by it).
@@ -45,6 +46,14 @@ struct FeedbackKitModifier: ViewModifier {
 		guard triggers.contains(.shake) else { return }
 		for await _ in NotificationCenter.default.notifications(named: .feedbackKitDidShake) {
 			controller.trigger()
+		}
+	}
+
+	private func observeScreenshots() async {
+		guard triggers.contains(.screenshot) else { return }
+		for await _ in ScreenshotDetector.events {
+			// No flash: the system already flashed the screen for its own screenshot.
+			controller.trigger(context: controller.currentContext, showFlash: false)
 		}
 	}
 }

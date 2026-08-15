@@ -38,12 +38,14 @@ import Chronicle
 
 	func trigger() { trigger(context: currentContext) }
 
-	func trigger(context: FeedbackContext) {
+	/// - Parameter showFlash: pass `false` when the trigger itself already flashed the
+	///   screen (the screenshot trigger), so the user doesn't see two flashes in a row.
+	func trigger(context: FeedbackContext, showFlash: Bool = true) {
 		guard !isPresenting, configuration != nil else { return }
-		Task { await performTrigger(context: context) }
+		Task { await performTrigger(context: context, showFlash: showFlash) }
 	}
 
-	private func performTrigger(context: FeedbackContext) async {
+	private func performTrigger(context: FeedbackContext, showFlash: Bool) async {
 		guard let configuration else { return }
 		isCapturing = true
 		// Let SwiftUI hide FeedbackKit chrome (e.g. the floating button) before the grab.
@@ -56,7 +58,7 @@ import Chronicle
 			return
 		}
 		isCapturing = false
-		flash.flash()
+		if showFlash { flash.flash() }
 
 		let breadcrumbs = await ChronicleBreadcrumbs.collect(limit: configuration.breadcrumbLimit)
 		activeDraft = FeedbackDraft(

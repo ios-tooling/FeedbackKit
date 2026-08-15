@@ -96,10 +96,20 @@ Pass any combination to `.feedbackKit(triggers:)`:
 | `.keyboardShortcut` | macOS | ⌘⇧F. |
 | `.floatingButton` | iOS · macOS | A draggable bubble, hidden during capture. |
 | `.multiFingerGesture` | iOS | Two-finger long-press. |
+| `.screenshot` | iOS | Taking a system screenshot. |
 | `.programmatic` | iOS · macOS | Call `FeedbackKit.trigger()`. |
 
 Default is `[.shake, .keyboardShortcut, .programmatic]` — each is ignored on platforms that
 don't support it. Triggers are suppressed while the editor is open.
+
+`.screenshot` re-captures the scene itself rather than reading the screenshot iOS just saved,
+so it needs no photo library permission and no `Info.plist` keys. iOS never hands the app the
+screenshot image; reaching it through Photos would mean an authorization prompt, a race against
+the asset appearing in the library, a hard failure under limited-access, and a system
+confirmation alert on every attempt to delete it (the asset isn't one the app created). The
+system's copy therefore stays in the user's library. The trade-off is the one already shared by
+every other trigger: `drawHierarchy` renders Metal, SceneKit, and video layers black, where a
+true system screenshot would not.
 
 ## Transports
 

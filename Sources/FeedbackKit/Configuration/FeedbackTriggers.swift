@@ -20,6 +20,10 @@ public struct FeedbackTriggers: OptionSet, Sendable {
 	public static let programmatic = FeedbackTriggers(rawValue: 1 << 3)
 	/// A ⌘⇧F keyboard shortcut. **macOS only** (no-op where unsupported).
 	public static let keyboardShortcut = FeedbackTriggers(rawValue: 1 << 4)
+	/// Taking a system screenshot. **iOS only.** FeedbackKit re-captures the scene itself
+	/// rather than reading the saved screenshot, so no photo library access is needed —
+	/// see `ScreenshotDetector` for why. The system's own copy stays in Photos.
+	public static let screenshot = FeedbackTriggers(rawValue: 1 << 5)
 
 	/// Sensible default for internal builds. Shake is ignored on platforms without it.
 	public static let `default`: FeedbackTriggers = [.shake, .keyboardShortcut, .programmatic]
