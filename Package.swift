@@ -12,6 +12,7 @@ let package = Package(
                 .iOS(.v18)
          ],
     products: [
+        .library(name: "CustomerFeedbackKit", targets: ["CustomerFeedbackKit"]),
         // Products define the executables and libraries a package produces, making them visible to other packages.
         .library(
             name: "FeedbackKit",
@@ -25,6 +26,8 @@ let package = Package(
 		.package(url: "https://github.com/ios-tooling/TapeDeck.git", from: "0.4.3"),
     ],
     targets: [
+        .target(name: "CustomerFeedbackKit"),
+        .testTarget(name: "CustomerFeedbackKitTests", dependencies: ["CustomerFeedbackKit"]),
         // Targets are the basic building blocks of a package, defining a module or a test suite.
         // Targets can depend on other targets in this package and products from dependencies.
         .target(

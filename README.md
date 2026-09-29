@@ -185,3 +185,27 @@ delivers in the background.
 - Shake (iOS) is not detected while a text field is the first responder.
 
 See [`DESIGN.md`](DESIGN.md) for the full design rationale.
+
+## Customer feedback conversations
+
+`CustomerFeedbackKit` is a separate product for customer support. It has no dependency on the developer capture target and does not install screenshot/shake gestures, record audio or upload diagnostic logs. Existing `FeedbackKit` integrations continue unchanged.
+
+```swift
+import CustomerFeedbackKit
+
+// Retain this for the current account, outside the presentation view.
+let session = CustomerFeedbackSession(transport: MyAccountBoundTransport())
+
+// Present from a button, sheet, or navigation destination.
+CustomerFeedbackScreen(session: session)
+```
+
+Implement the main-actor `CustomerFeedbackTransport` methods to fetch `CustomerFeedbackPage`s, send `FeedbackSubmission`s, fetch a private attachment by UUID, and mark explicitly viewed message IDs read. The first empty conversation shows a category/text form. Sending opens the ongoing chat, with paged earlier history and screenshot attachments on subsequent messages. `session.unreadCount` is observable for a host badge; call `refresh()` on foreground activation. While presented and active, the screen refreshes every 15 seconds. Hidden/offscreen messages and notification arrivals are never automatically acknowledged.
+
+Bind the transport to a single account and reject requests/results if that account changes. On sign-out or account replacement call `session.invalidate()` and create a new session. Invalidation clears cached messages and the unsent draft and rejects late asynchronous results. Retaining the session preserves drafts across sheet dismissal and send failure. Failed sends reuse the same UUID; editing the draft creates a new UUID. The backend must deduplicate that UUID and payload. A successful response clears the draft even if the subsequent history refresh fails; the screen exposes retry without submitting again.
+
+History pages provide a stable conversation ID, generation and ordered message sequences. Return the latest page first, then honor `before`/`after`. Throw `CustomerFeedbackError.reloadRequired` when a cursor belongs to an obsolete generation (for example, after an account merge). The session replaces cached history when identity/generation changes. The sample PZLServer integration uses pages of 15 to stay below a 1 MiB response ceiling.
+
+Screenshot selection uses the system photo picker on iOS and file importer on macOS. Users preview/remove images before sending. ImageIO re-encodes at most three JPEGs, each at most 1 MiB and 2000 pixels per dimension, dropping original EXIF metadata. The package supplies accessible labels, text styles and native scrolling controls on iOS 18/macOS 15 and later. The host handles authentication, notification authorization and routing; the package never contacts an account service itself.
+
+Run `swift test` for the customer session, retry, isolation and image preparation tests, and build both products for iOS and macOS.
