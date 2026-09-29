@@ -53,38 +53,3 @@ public struct CustomerFeedbackScreen: View {
         }
     }
 }
-
-private struct CustomerFeedbackComposer: View {
-    @Bindable var session: CustomerFeedbackSession
-    var body: some View {
-        @Bindable var draft = session.draft
-        Group {
-            if session.messages.isEmpty {
-                Section("Feedback Type") {
-                    Picker("Type", selection: $draft.category) {
-                        Text("Bug").tag(FeedbackCategory.bug)
-                        Text("Suggestion").tag(FeedbackCategory.idea)
-                        Text("General Comment").tag(FeedbackCategory.other)
-                    }
-                }
-            }
-            Section(session.messages.isEmpty ? "Your Feedback" : "Your Message") {
-                TextField("Write a message…", text: $draft.text, axis: .vertical)
-                    .lineLimit(4...12).accessibilityLabel("Feedback")
-                Text("\(draft.text.utf16.count) / \(FeedbackSubmission.maximumTextLength)")
-                    .font(.caption).foregroundStyle(.secondary)
-            }
-            FeedbackAttachmentsSection(model: draft)
-            if let error = draft.error { Section { Text(error).foregroundStyle(.red) } }
-            Section {
-                Button { Task { await session.send() } } label: {
-                    if draft.sending { ProgressView("Sending…") } else { Text("Send") }
-                }
-                .disabled(!draft.submission.isValid || draft.sending || draft.loadingImages)
-                .accessibilityLabel("Send Feedback")
-            } footer: {
-                Text("Your app version and operating system are included. Select only screenshots you want to share. Replies appear here.")
-            }
-        }.disabled(draft.sending)
-    }
-}
