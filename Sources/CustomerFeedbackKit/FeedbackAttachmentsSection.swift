@@ -34,7 +34,7 @@ struct FeedbackAttachmentsSection: View {
             }
             if model.screenshots.count < FeedbackSubmission.maximumScreenshots {
                 #if os(iOS)
-                PhotosPicker(selection: $selection, maxSelectionCount: FeedbackSubmission.maximumScreenshots - model.screenshots.count, matching: .images) {
+                PhotosPicker(selection: $selection, maxSelectionCount: FeedbackSubmission.maximumScreenshots - model.screenshots.count, matching: .screenshots) {
                     Label("Attach Screenshots", systemImage: "photo")
                 }
                 .disabled(model.loadingImages)
